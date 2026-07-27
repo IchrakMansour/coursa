@@ -3,8 +3,18 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader, EmptyState } from "@/components/ui";
-import { AddCategorieForm, CategorieCard } from "@/components/livreur/MenuEditor";
-import type { MenuCategorie, Produit, Restaurant } from "@/types/database";
+import {
+  AjoutProduitForm,
+  CategorieCard,
+  ImportMenuTexte,
+} from "@/components/livreur/MenuEditor";
+import { MenuPhotos } from "@/components/livreur/MenuPhotos";
+import type {
+  MenuCategorie,
+  MenuPhoto,
+  Produit,
+  Restaurant,
+} from "@/types/database";
 
 export default async function LivreurMenuPage({
   params,
@@ -28,17 +38,27 @@ export default async function LivreurMenuPage({
   const resto = (partenariat as unknown as { restaurant: Restaurant | null }).restaurant;
   if (!resto) notFound();
 
-  const [{ data: catsData }, { data: prodsData }] = await Promise.all([
-    admin
-      .from("menu_categories")
-      .select("*")
-      .eq("restaurant_id", restaurantId)
-      .order("position"),
-    admin.from("produits").select("*").eq("restaurant_id", restaurantId).order("nom"),
-  ]);
+  const [{ data: catsData }, { data: prodsData }, { data: photosData }] =
+    await Promise.all([
+      admin
+        .from("menu_categories")
+        .select("*")
+        .eq("restaurant_id", restaurantId)
+        .order("position"),
+      admin.from("produits").select("*").eq("restaurant_id", restaurantId).order("nom"),
+      admin
+        .from("menu_photos")
+        .select("*")
+        .eq("restaurant_id", restaurantId)
+        .order("position"),
+    ]);
 
   const categories: MenuCategorie[] = (catsData as MenuCategorie[]) ?? [];
   const produits: Produit[] = (prodsData as Produit[]) ?? [];
+  const photos: MenuPhoto[] = (photosData as MenuPhoto[]) ?? [];
+  const sansCategorie = produits.filter(
+    (p) => !p.categorie_id || !categories.some((c) => c.id === p.categorie_id)
+  );
 
   return (
     <div className="max-w-3xl">
@@ -51,29 +71,52 @@ export default async function LivreurMenuPage({
 
       <PageHeader
         title={`Menu — ${resto.nom}`}
-        desc="Créez les catégories et les produits de ce restaurant."
+        desc="Saisissez les produits que vos clients pourront commander."
       />
 
-      <AddCategorieForm restaurantId={restaurantId} />
+      <ImportMenuTexte restaurantId={restaurantId} />
 
-      {categories.length === 0 ? (
+      <AjoutProduitForm restaurantId={restaurantId} categories={categories} />
+
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+        Le menu ({produits.length} produit{produits.length > 1 ? "s" : ""})
+      </h2>
+
+      {produits.length === 0 ? (
         <EmptyState
           icon="📋"
           title="Ce menu est vide"
-          desc="Commencez par créer une catégorie, puis ajoutez-y des produits."
+          desc="Ajoutez votre premier produit ci-dessus. Tant que le menu est vide, vos clients ne voient rien à commander."
         />
       ) : (
         <div className="space-y-4">
-          {categories.map((cat) => (
+          {categories
+            .filter((cat) => produits.some((p) => p.categorie_id === cat.id))
+            .map((cat) => (
+              <CategorieCard
+                key={cat.id}
+                restaurantId={restaurantId}
+                categorie={cat}
+                categories={categories}
+                produits={produits.filter((p) => p.categorie_id === cat.id)}
+              />
+            ))}
+
+          {/* Les produits sans catégorie restent visibles, ici comme sur la vitrine */}
+          {sansCategorie.length > 0 && (
             <CategorieCard
-              key={cat.id}
               restaurantId={restaurantId}
-              categorie={cat}
-              produits={produits.filter((p) => p.categorie_id === cat.id)}
+              categorie={null}
+              categories={categories}
+              produits={sansCategorie}
             />
-          ))}
+          )}
         </div>
       )}
+
+      <div className="mt-8">
+        <MenuPhotos restaurantId={restaurantId} photos={photos} />
+      </div>
     </div>
   );
 }

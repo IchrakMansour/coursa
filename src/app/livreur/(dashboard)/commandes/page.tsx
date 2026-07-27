@@ -2,6 +2,8 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { CommandeCard } from "@/components/livreur/CommandeCard";
+import { PartagePosition } from "@/components/livreur/PartagePosition";
+import { STATUTS_EN_COURSE } from "@/lib/constants";
 import type { Commande } from "@/types/database";
 
 export default async function CommandesPage() {
@@ -26,6 +28,12 @@ export default async function CommandesPage() {
   return (
     <div>
       <PageHeader title="Commandes" desc="Gérez vos livraisons en temps réel." />
+
+      <PartagePosition
+        commandes={commandes
+          .filter((c) => STATUTS_EN_COURSE.includes(c.status))
+          .map((c) => ({ id: c.id, reference: c.reference }))}
+      />
 
       {commandes.length === 0 ? (
         <EmptyState

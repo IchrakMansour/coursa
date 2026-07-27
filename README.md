@@ -22,12 +22,16 @@ Chaque livreur dispose d'un lien unique à partager avec ses clients :
 
 ---
 
-## 👥 Les 4 espaces
+## 👥 Les espaces
 
-1. **Livreur** — dashboard, profil, page publique, restaurants, commandes, CRM, abonnement, QR code
-2. **Restaurant** — profil, menu, livreurs partenaires, commandes
-3. **Client** — accès sans compte via le lien du livreur, commande et suivi en temps réel
-4. **Admin** — utilisateurs, commandes globales, finances, statistiques
+L'inscription est **réservée aux livreurs** : eux seuls ont un compte.
+Les restaurants sont des *fiches* créées et gérées par le livreur
+(coordonnées, photos de la carte, produits) — ils ne se connectent pas.
+
+1. **Livreur** — dashboard, profil, page publique, restaurants (fiches +
+   photos du menu), commandes, CRM, abonnement, QR code
+2. **Client** — accès sans compte via le lien du livreur, commande et suivi en temps réel
+3. **Admin** — utilisateurs, commandes globales, finances, statistiques
 
 ---
 
@@ -101,8 +105,6 @@ Le fichier `seed.sql` crée ces identités (connexion par téléphone + OTP) :
 | Rôle | Téléphone | Détails |
 |---|---|---|
 | Livreur | `+21620000002` | Ahmed Delivery — vitrine `/ahmed-delivery` |
-| Restaurant | `+21620000003` | Pizza House |
-| Restaurant | `+21620000004` | Burger Time |
 | Admin | `+21620000001` | Administrateur |
 
 Vitrine publique de démo : **http://localhost:3000/ahmed-delivery**
@@ -119,13 +121,13 @@ src/
 │   ├── [slug]/               # Page publique du livreur (vitrine)
 │   ├── suivi/[id]/           # Suivi de commande client (temps réel)
 │   ├── api/commandes/        # Création de commande (client non authentifié)
-│   ├── livreur/              # Espace livreur (dashboard, commandes, CRM…)
-│   ├── restaurant/           # Espace restaurant (menu, livreurs, commandes)
+│   ├── livreur/              # Espace livreur (restaurants, commandes, CRM…)
 │   └── admin/                # Espace administration
 ├── components/               # UI réutilisable + composants par espace
 ├── lib/
 │   ├── supabase/             # Clients (browser, server, admin, middleware)
 │   ├── auth.ts               # Helpers de session / rôles
+│   ├── menu-photos.ts        # Téléversement des photos de carte (navigateur)
 │   ├── whatsapp.ts           # Notifications WhatsApp
 │   ├── constants.ts          # Statuts, plans, libellés
 │   └── utils.ts              # Formatage prix/dates, slug…
@@ -140,9 +142,9 @@ supabase/
 
 ## ✅ Fonctionnalités du MVP
 
-**Livreur** : création de compte, vitrine publique, ajout de restaurants,
+**Livreur** : création de compte, vitrine publique, ajout de restaurants avec
+**photos du menu** (pour avoir les prix sous les yeux), saisie des produits,
 gestion des commandes (statuts), statistiques, CRM, QR code, abonnement.
-**Restaurant** : profil, menu, acceptation des livreurs, gestion des commandes.
 **Client** : accès via lien, consultation du menu, commande, suivi en temps réel.
 **Admin** : gestion des utilisateurs, commandes globales, finances, statistiques.
 

@@ -3,15 +3,15 @@
 --  À exécuter APRÈS les migrations, en local (supabase db reset)
 --  ou dans le SQL Editor de votre projet Supabase.
 --
---  Crée : 1 admin, 1 livreur (Ahmed), 2 restaurants avec menus,
---         des clients, et quelques commandes.
+--  Crée : 1 admin, 1 livreur (Ahmed), 2 fiches restaurant avec
+--         menus, des clients, et quelques commandes.
+--  Les restaurants n'ont PAS de compte : ce sont des fiches
+--  créées et gérées par le livreur.
 -- ============================================================
 
 -- UUID fixes pour la démo
 -- admin      : 11111111-1111-1111-1111-111111111111
 -- livreur    : 22222222-2222-2222-2222-222222222222
--- resto1 own : 33333333-3333-3333-3333-333333333333
--- resto2 own : 44444444-4444-4444-4444-444444444444
 
 -- ------------------------------------------------------------
 --  Utilisateurs auth (identités de démo — connexion OTP par téléphone)
@@ -19,18 +19,14 @@
 insert into auth.users (id, instance_id, aud, role, phone, phone_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
 values
   ('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '+21620000001', now(), now(), now(), '{"provider":"phone","providers":["phone"]}', '{"role":"admin","full_name":"Administrateur"}'),
-  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '+21620000002', now(), now(), now(), '{"provider":"phone","providers":["phone"]}', '{"role":"livreur","full_name":"Ahmed Ben Ali"}'),
-  ('33333333-3333-3333-3333-333333333333', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '+21620000003', now(), now(), now(), '{"provider":"phone","providers":["phone"]}', '{"role":"restaurant","full_name":"Pizza House"}'),
-  ('44444444-4444-4444-4444-444444444444', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '+21620000004', now(), now(), now(), '{"provider":"phone","providers":["phone"]}', '{"role":"restaurant","full_name":"Burger Time"}')
+  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '+21620000002', now(), now(), now(), '{"provider":"phone","providers":["phone"]}', '{"role":"livreur","full_name":"Ahmed Ben Ali"}')
 on conflict (id) do nothing;
 
 -- Les profils sont normalement créés par le trigger on_auth_user_created.
 -- On force ici au cas où le trigger n'existerait pas encore lors du seed.
 insert into profiles (id, role, full_name, phone, whatsapp, status) values
   ('11111111-1111-1111-1111-111111111111', 'admin', 'Administrateur', '+21620000001', '+21620000001', 'active'),
-  ('22222222-2222-2222-2222-222222222222', 'livreur', 'Ahmed Ben Ali', '+21620000002', '+21620000002', 'active'),
-  ('33333333-3333-3333-3333-333333333333', 'restaurant', 'Pizza House', '+21620000003', '+21620000003', 'active'),
-  ('44444444-4444-4444-4444-444444444444', 'restaurant', 'Burger Time', '+21620000004', '+21620000004', 'active')
+  ('22222222-2222-2222-2222-222222222222', 'livreur', 'Ahmed Ben Ali', '+21620000002', '+21620000002', 'active')
 on conflict (id) do update set role = excluded.role, full_name = excluded.full_name;
 
 -- ------------------------------------------------------------
@@ -58,11 +54,11 @@ insert into abonnements (livreur_id, plan, status, expires_at) values
 on conflict do nothing;
 
 -- ------------------------------------------------------------
---  Restaurants
+--  Restaurants (fiches sans compte, ajoutées par le livreur)
 -- ------------------------------------------------------------
 insert into restaurants (id, owner_id, nom, adresse, telephone, categorie, horaires, ville, status) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333', 'Pizza House', 'Av. Habib Bourguiba, Sousse', '+21673000001', 'Pizza', '11:00 - 23:30', 'Sousse', 'active'),
-  ('aaaaaaaa-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'Burger Time', 'Rue de la Corniche, Sousse', '+21673000002', 'Burger', '11:00 - 00:00', 'Sousse', 'active')
+  ('aaaaaaaa-0000-0000-0000-000000000001', null, 'Pizza House', 'Av. Habib Bourguiba, Sousse', '+21673000001', 'Pizza', '11:00 - 23:30', 'Sousse', 'active'),
+  ('aaaaaaaa-0000-0000-0000-000000000002', null, 'Burger Time', 'Rue de la Corniche, Sousse', '+21673000002', 'Burger', '11:00 - 00:00', 'Sousse', 'active')
 on conflict (id) do nothing;
 
 -- Partenariats acceptés

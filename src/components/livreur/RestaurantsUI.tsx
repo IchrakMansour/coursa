@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { formatPrix } from "@/lib/utils";
-import { retirerPartenariat, accepterInvitation } from "@/app/livreur/(dashboard)/restaurants/actions";
+import { retirerPartenariat } from "@/app/livreur/(dashboard)/restaurants/actions";
+import { PhotosMenuPicker } from "@/components/livreur/PhotosMenuPicker";
+import { ChampTelephone } from "@/components/ChampTelephone";
 import type { Partenariat } from "@/types/database";
 
 export function AddRestaurantForm({
@@ -42,10 +44,11 @@ export function AddRestaurantForm({
           <label className="label">Adresse</label>
           <input name="adresse" className="input" placeholder="Av. Habib Bourguiba" />
         </div>
-        <div>
-          <label className="label">Téléphone</label>
-          <input name="telephone" className="input" placeholder="+216 73 000 000" />
-        </div>
+        <ChampTelephone
+          name="telephone"
+          label="Téléphone du restaurant"
+          aide={null}
+        />
         <div>
           <label className="label">Prix de livraison convenu (DT)</label>
           <input
@@ -57,6 +60,28 @@ export function AddRestaurantForm({
           />
         </div>
       </div>
+
+      <div>
+        <label className="label">Menu — une ligne par produit</label>
+        <textarea
+          name="menu_texte"
+          className="input min-h-[150px] font-mono text-sm"
+          placeholder={`Pizzas
+Margherita 12
+4 Fromages 18,5
+
+Boissons
+Coca 33cl 3`}
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Le prix va en fin de ligne. Une ligne sans prix devient un titre de
+          catégorie pour les lignes qui suivent. Vous pourrez tout corriger
+          ensuite.
+        </p>
+      </div>
+
+      <PhotosMenuPicker />
+
       <div className="flex gap-2">
         <button className="btn-primary flex-1">Ajouter</button>
         <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
@@ -67,7 +92,13 @@ export function AddRestaurantForm({
   );
 }
 
-export function RestaurantRow({ partenariat }: { partenariat: Partenariat }) {
+export function RestaurantRow({
+  partenariat,
+  nbProduits = 0,
+}: {
+  partenariat: Partenariat;
+  nbProduits?: number;
+}) {
   const [pending, startTransition] = useTransition();
   const r = partenariat.restaurant;
 
@@ -83,15 +114,22 @@ export function RestaurantRow({ partenariat }: { partenariat: Partenariat }) {
             {r?.categorie ?? "Restaurant"}
             {r?.adresse ? ` · ${r.adresse}` : ""}
           </p>
+          {nbProduits === 0 ? (
+            <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              ⚠️ Menu vide — rien à commander
+            </span>
+          ) : (
+            <span className="mt-1 inline-flex text-xs text-slate-400">
+              {nbProduits} produit{nbProduits > 1 ? "s" : ""} au menu
+            </span>
+          )}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        {partenariat.status === "accepted" && (
-          <span className="hidden text-sm font-medium text-slate-600 sm:block">
-            {formatPrix(partenariat.prix_livraison)} / livraison
-          </span>
-        )}
-        {partenariat.status === "accepted" && r && (
+        <span className="hidden text-sm font-medium text-slate-600 sm:block">
+          {formatPrix(partenariat.prix_livraison)} / livraison
+        </span>
+        {r && (
           <Link
             href={`/livreur/restaurants/${r.id}/menu`}
             className="btn-secondary text-sm"
@@ -99,24 +137,14 @@ export function RestaurantRow({ partenariat }: { partenariat: Partenariat }) {
             🍔 Menu
           </Link>
         )}
-        {partenariat.status === "pending" ? (
-          <button
-            disabled={pending}
-            onClick={() => startTransition(() => accepterInvitation(partenariat.id))}
-            className="btn-primary"
-          >
-            Accepter
-          </button>
-        ) : (
-          <button
-            disabled={pending}
-            onClick={() => startTransition(() => retirerPartenariat(partenariat.id))}
-            className="btn-ghost text-red-600"
-            aria-label="Retirer"
-          >
-            🗑️
-          </button>
-        )}
+        <button
+          disabled={pending}
+          onClick={() => startTransition(() => retirerPartenariat(partenariat.id))}
+          className="btn-ghost text-red-600"
+          aria-label="Retirer"
+        >
+          🗑️
+        </button>
       </div>
     </div>
   );

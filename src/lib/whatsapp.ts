@@ -6,13 +6,16 @@
 //  simplement affichés dans la console au lieu d'être envoyés.
 // ============================================================
 
+import { telWhatsApp } from "@/lib/utils";
+
 const ENABLED = process.env.WHATSAPP_ENABLED === "true";
 const PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-// Normalise un numéro (retire +, espaces...) — WhatsApp attend le format international sans +
+// WhatsApp attend le format international sans « + ». Un numéro tunisien
+// saisi sans indicatif se voit ajouter le +216.
 function normalizePhone(phone: string): string {
-  return phone.replace(/[^0-9]/g, "");
+  return telWhatsApp(phone) ?? phone.replace(/[^0-9]/g, "");
 }
 
 export async function sendWhatsApp(to: string, message: string): Promise<boolean> {

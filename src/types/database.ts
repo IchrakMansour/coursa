@@ -2,7 +2,9 @@
 //  Types partagés — reflètent le schéma Supabase
 // ============================================================
 
-export type UserRole = "livreur" | "restaurant" | "client" | "admin";
+// La plateforme est centrée livreur : seuls les livreurs s'inscrivent.
+// Les restaurants sont des fiches créées par le livreur, sans compte.
+export type UserRole = "livreur" | "client" | "admin";
 export type AccountStatus = "active" | "pending" | "suspended";
 export type PartenariatStatus = "pending" | "accepted" | "refused";
 export type CommandeStatus =
@@ -49,6 +51,8 @@ export interface Service {
   livreur_id: string;
   nom: string;
   icone: string;
+  // Frais de livraison indicatifs (0 = à convenir avec le client)
+  prix: number;
   actif: boolean;
 }
 
@@ -97,6 +101,17 @@ export interface Produit {
   disponible: boolean;
 }
 
+// Photo de la carte du restaurant, prise par le livreur
+export interface MenuPhoto {
+  id: string;
+  restaurant_id: string;
+  url: string;
+  storage_path: string | null;
+  legende: string | null;
+  position: number;
+  created_at: string;
+}
+
 export interface Client {
   id: string;
   livreur_id: string;
@@ -119,20 +134,38 @@ export interface Commande {
   id: string;
   reference: string;
   livreur_id: string;
+  // Une commande vise soit un restaurant, soit un service (courses, colis…)
   restaurant_id: string | null;
+  service_id: string | null;
+  service_nom: string | null;
   client_id: string | null;
   client_nom: string | null;
   client_telephone: string | null;
   client_adresse: string | null;
   commentaire: string | null;
+  // Commande écrite en toutes lettres par le client (menu en photo)
+  demande_libre: string | null;
   status: CommandeStatus;
   sous_total: number;
   frais_livraison: number;
   total: number;
+  // Dernière position connue du livreur (effacée à la livraison)
+  livreur_lat: number | null;
+  livreur_lng: number | null;
+  position_maj: string | null;
   created_at: string;
   updated_at: string;
   items?: CommandeItem[];
   restaurant?: Restaurant;
+}
+
+// Position diffusée en direct sur le canal Realtime de la commande
+export interface PositionLivreur {
+  lat: number;
+  lng: number;
+  precision?: number | null;
+  cap?: number | null;
+  horodatage: number;
 }
 
 export interface Abonnement {

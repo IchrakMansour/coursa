@@ -7,17 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import { APP_NAME } from "@/lib/constants";
 import type { UserRole } from "@/types/database";
 
-const ROLES: { id: UserRole; label: string; icon: string; desc: string }[] = [
-  { id: "livreur", label: "Livreur", icon: "🛵", desc: "Je livre des commandes" },
-  { id: "restaurant", label: "Restaurant", icon: "🍽️", desc: "Je gère un restaurant" },
-];
-
+// La plateforme ne compte qu'un type d'inscrit : le livreur.
+// (Les restaurants sont des fiches créées par le livreur, sans compte.)
 function homeForRole(role: UserRole | undefined) {
-  return role === "admin"
-    ? "/admin"
-    : role === "restaurant"
-      ? "/restaurant"
-      : "/livreur";
+  return role === "admin" ? "/admin" : "/livreur";
 }
 
 function ConnexionInner() {
@@ -30,7 +23,6 @@ function ConnexionInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nom, setNom] = useState("");
-  const [role, setRole] = useState<UserRole>("livreur");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -65,7 +57,7 @@ function ConnexionInner() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { role, full_name: nom } },
+        options: { data: { role: "livreur", full_name: nom } },
       });
       if (error) {
         setLoading(false);
@@ -107,11 +99,11 @@ function ConnexionInner() {
 
         <div className="card p-6 sm:p-8">
           <h1 className="text-xl font-bold text-slate-900">
-            {inscription ? "Créer votre espace" : "Connexion"}
+            {inscription ? "Créer votre espace livreur" : "Connexion"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {inscription
-              ? "Renseignez vos informations pour créer votre compte."
+              ? "Réservé aux livreurs : créez votre compte en quelques secondes."
               : "Connectez-vous avec votre e-mail et mot de passe."}
           </p>
 
@@ -128,39 +120,16 @@ function ConnexionInner() {
 
           <form onSubmit={onSubmit} className="mt-5 space-y-4">
             {inscription && (
-              <>
-                <div>
-                  <label className="label">Nom complet</label>
-                  <input
-                    className="input"
-                    value={nom}
-                    onChange={(e) => setNom(e.target.value)}
-                    placeholder="Ahmed Ben Ali"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label">Je suis un…</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {ROLES.map((r) => (
-                      <button
-                        type="button"
-                        key={r.id}
-                        onClick={() => setRole(r.id)}
-                        className={`rounded-xl border p-3 text-left transition ${
-                          role === r.id
-                            ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
-                            : "border-slate-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="text-xl">{r.icon}</span>
-                        <p className="mt-1 text-sm font-semibold">{r.label}</p>
-                        <p className="text-xs text-slate-500">{r.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
+              <div>
+                <label className="label">Nom complet</label>
+                <input
+                  className="input"
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  placeholder="Ahmed Ben Ali"
+                  required
+                />
+              </div>
             )}
             <div>
               <label className="label">E-mail</label>

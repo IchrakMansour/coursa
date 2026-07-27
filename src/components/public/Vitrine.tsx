@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatPrix, initiales } from "@/lib/utils";
+import {
+  formatPrix,
+  initiales,
+  normaliserTelTunisien,
+  telWhatsApp,
+} from "@/lib/utils";
+import { ChampTelephone } from "@/components/ChampTelephone";
 import type {
   Livreur,
   Service,
   Restaurant,
   Produit,
   MenuCategorie,
+  MenuPhoto,
 } from "@/types/database";
 
 type RestoWithFrais = Restaurant & { prix_livraison: number };
+
+// La restauration a son propre parcours (liste des partenaires → menu).
+// Un service nommé « Restaurant » ferait doublon dans la grille de choix et
+// mènerait à une simple zone de texte : on ne l'affiche pas.
+const SERVICE_RESTAURATION = /restaur/i;
 
 export function Vitrine({
   livreur,
@@ -20,6 +32,7 @@ export function Vitrine({
   restaurants,
   categories,
   produits,
+  photos,
 }: {
   livreur: Livreur;
   whatsapp: string | null;
@@ -27,10 +40,18 @@ export function Vitrine({
   restaurants: RestoWithFrais[];
   categories: MenuCategorie[];
   produits: Produit[];
+  photos: MenuPhoto[];
 }) {
   const router = useRouter();
   const [restoActif, setRestoActif] = useState<RestoWithFrais | null>(null);
+  // Le client commande soit dans un restaurant, soit un service (courses,
+  // pharmacie, colis…) : les deux sont exclusifs.
+  const [serviceActif, setServiceActif] = useState<Service | null>(null);
+  const [modeRestauration, setModeRestauration] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [demandeLibre, setDemandeLibre] = useState("");
+  const [telephone, setTelephone] = useState("");
+  const [photoZoom, setPhotoZoom] = useState<MenuPhoto | null>(null);
   const [checkout, setCheckout] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -49,16 +70,66 @@ export function Vitrine({
     (s, it) => s + Number(it.produit.prix) * it.quantite,
     0
   );
-  const frais = restoActif?.prix_livraison ?? 0;
-  const total = sousTotal + Number(frais);
+  const frais = serviceActif
+    ? Number(serviceActif.prix ?? 0)
+    : Number(restoActif?.prix_livraison ?? 0);
+  const total = sousTotal + frais;
   const nbArticles = items.reduce((s, it) => s + it.quantite, 0);
+  const texteLibre = demandeLibre.trim();
+  // Restaurant : produits cliqués et/ou texte. Service : texte uniquement.
+  const commandePrete = serviceActif
+    ? texteLibre.length > 0
+    : nbArticles > 0 || texteLibre.length > 0;
+  // Dès qu'il y a du texte libre, le livreur confirmera le montant exact.
+  const totalIndicatif = texteLibre.length > 0;
+
+  // Changer de cible vide la commande en cours.
+  const reinitialiser = (question: string) => {
+    if (commandePrete && !confirm(question)) return false;
+    setCart({});
+    setDemandeLibre("");
+    return true;
+  };
+
+  // Le menu s'affiche plus bas : on y amène le client après son choix.
+  const menuRef = useRef<HTMLElement>(null);
+  const versLeMenu = () =>
+    setTimeout(
+      () => menuRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
 
   const choisirResto = (r: RestoWithFrais) => {
-    if (restoActif && restoActif.id !== r.id && nbArticles > 0) {
-      if (!confirm("Changer de restaurant videra votre panier. Continuer ?")) return;
-      setCart({});
+    if (restoActif?.id === r.id) {
+      versLeMenu();
+      return;
     }
+    if (!reinitialiser("Changer de restaurant videra votre commande. Continuer ?"))
+      return;
     setRestoActif(r);
+    versLeMenu();
+  };
+
+  // Entrer dans le parcours restauration : la liste des restaurants
+  // partenaires s'ouvre, puis le menu de celui qui est choisi. Avec un seul
+  // partenaire, on saute l'étape et on ouvre son menu directement.
+  const choisirRestauration = () => {
+    if (modeRestauration) return;
+    if (!reinitialiser("Changer de service videra votre commande. Continuer ?"))
+      return;
+    setServiceActif(null);
+    setModeRestauration(true);
+    setRestoActif(restaurants.length === 1 ? restaurants[0] : null);
+    if (restaurants.length === 1) versLeMenu();
+  };
+
+  const choisirService = (s: Service) => {
+    if (serviceActif?.id === s.id) return;
+    if (!reinitialiser("Changer de service videra votre commande. Continuer ?"))
+      return;
+    setModeRestauration(false);
+    setRestoActif(null);
+    setServiceActif(s);
   };
 
   const setQty = (id: string, delta: number) =>
@@ -67,15 +138,26 @@ export function Vitrine({
   async function passerCommande(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
+
+    const tel = normaliserTelTunisien(telephone);
+    if (!tel) {
+      setErreur(
+        "Numéro de téléphone invalide : 8 chiffres commençant par 2, 3, 4, 5, 7 ou 9."
+      );
+      return;
+    }
+
     setEnvoi(true);
     const fd = new FormData(e.currentTarget);
     const payload = {
       slug: livreur.slug,
-      restaurant_id: restoActif?.id,
+      restaurant_id: restoActif?.id ?? null,
+      service_id: serviceActif?.id ?? null,
       client_nom: fd.get("nom"),
-      client_telephone: fd.get("telephone"),
+      client_telephone: tel,
       client_adresse: fd.get("adresse"),
       commentaire: fd.get("commentaire"),
+      demande_libre: texteLibre || null,
       items: items.map((it) => ({
         produit_id: it.produit.id,
         nom_produit: it.produit.nom,
@@ -97,7 +179,33 @@ export function Vitrine({
     router.push(`/suivi/${data.id}`);
   }
 
-  const catsDuResto = categories.filter((c) => c.restaurant_id === restoActif?.id);
+  // Services proposés en plus de la restauration
+  const autresServices =
+    restaurants.length > 0
+      ? services.filter((s) => !SERVICE_RESTAURATION.test(s.nom))
+      : services;
+
+  const photosDuResto = photos.filter((p) => p.restaurant_id === restoActif?.id);
+  const produitsDuResto = produits.filter((p) => p.restaurant_id === restoActif?.id);
+
+  // Le menu est groupé par catégorie, et les produits sans catégorie forment
+  // un dernier groupe : sinon ils resteraient invisibles pour le client.
+  const groupesMenu: { titre: string | null; produits: Produit[] }[] = [
+    ...categories
+      .filter((c) => c.restaurant_id === restoActif?.id)
+      .map((c) => ({
+        titre: c.nom,
+        produits: produitsDuResto.filter((p) => p.categorie_id === c.id),
+      })),
+    {
+      titre: null,
+      produits: produitsDuResto.filter(
+        (p) =>
+          !p.categorie_id ||
+          !categories.some((c) => c.id === p.categorie_id)
+      ),
+    },
+  ].filter((g) => g.produits.length > 0);
   const ouvert = livreur.is_published;
 
   return (
@@ -131,7 +239,7 @@ export function Vitrine({
         </div>
         {whatsapp && (
           <a
-            href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}`}
+            href={`https://wa.me/${telWhatsApp(whatsapp) ?? whatsapp.replace(/\D/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-700"
@@ -142,25 +250,96 @@ export function Vitrine({
       </div>
 
       <div className="mx-auto max-w-lg px-4">
-        {/* Services */}
-        {services.length > 0 && (
+        {/* Point d'entrée unique : restauration ou autre service */}
+        <section className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold text-slate-500">
+            Que souhaitez-vous ?
+          </h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {restaurants.length > 0 && (
+              <button
+                onClick={choisirRestauration}
+                className={`rounded-2xl border p-3 text-left transition ${
+                  modeRestauration
+                    ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
+                    : "border-slate-200 bg-white hover:bg-slate-50"
+                }`}
+              >
+                <span className="text-xl">🍽️</span>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                  Restaurants
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {restaurants.length} partenaire{restaurants.length > 1 ? "s" : ""}
+                </p>
+              </button>
+            )}
+            {autresServices.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => choisirService(s)}
+                className={`rounded-2xl border p-3 text-left transition ${
+                  serviceActif?.id === s.id
+                    ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
+                    : "border-slate-200 bg-white hover:bg-slate-50"
+                }`}
+              >
+                <span className="text-xl">{s.icone}</span>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                  {s.nom}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {Number(s.prix) > 0
+                    ? `Livraison ${formatPrix(s.prix)}`
+                    : "Prix à convenir"}
+                </p>
+              </button>
+            ))}
+          </div>
+          {!modeRestauration && !serviceActif && (
+            <p className="mt-3 text-center text-sm text-slate-400">
+              Choisissez ci-dessus pour commencer votre commande.
+            </p>
+          )}
+        </section>
+
+        {/* Demande de service : pas de catalogue, le client décrit son besoin */}
+        {serviceActif && (
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-semibold text-slate-500">Services</h2>
-            <div className="flex flex-wrap gap-2">
-              {services.map((s) => (
-                <span
-                  key={s.id}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm"
-                >
-                  <span>{s.icone}</span> {s.nom}
-                </span>
-              ))}
+            <div className="card p-5">
+              <h2 className="font-bold text-slate-900">
+                {serviceActif.icone} {serviceActif.nom}
+              </h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                Décrivez ce dont vous avez besoin, le livreur s&apos;en occupe et
+                vous confirme le montant.
+              </p>
+              <label className="label mt-4" htmlFor="demande-service">
+                Votre demande *
+              </label>
+              <textarea
+                id="demande-service"
+                value={demandeLibre}
+                onChange={(e) => setDemandeLibre(e.target.value)}
+                className="input min-h-[120px]"
+                placeholder={
+                  serviceActif.nom.toLowerCase().includes("colis")
+                    ? "Ex : Récupérer un colis chez Ahmed, 12 rue de Palestine, et le livrer à mon adresse"
+                    : serviceActif.nom.toLowerCase().includes("pharma")
+                      ? "Ex : Doliprane 1000, sirop pour la toux — ordonnance en photo au livreur"
+                      : "Ex : 2 kg de tomates, 1 pain, 6 œufs — au marché central"
+                }
+                maxLength={1000}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Soyez précis : adresse de récupération, quantités, marques…
+              </p>
             </div>
           </section>
         )}
 
-        {/* Restaurants */}
-        <section className="mt-6">
+        {/* Restaurants partenaires — visibles une fois « Restaurants » choisi */}
+        <section className={`mt-6 ${modeRestauration ? "" : "hidden"}`}>
           <h2 className="mb-2 text-sm font-semibold text-slate-500">
             {restoActif ? "Restaurant sélectionné" : "Choisissez un restaurant"}
           </h2>
@@ -189,7 +368,9 @@ export function Vitrine({
                       {r.categorie ?? "Restaurant"} · Livraison {formatPrix(r.prix_livraison)}
                     </p>
                   </div>
-                  {restoActif?.id === r.id && <span className="text-brand-600">✓</span>}
+                  <span className="shrink-0 text-sm font-medium text-brand-600">
+                    {restoActif?.id === r.id ? "Voir le menu ↓" : "→"}
+                  </span>
                 </button>
               ))}
             </div>
@@ -198,22 +379,56 @@ export function Vitrine({
 
         {/* Menu du restaurant sélectionné */}
         {restoActif && (
-          <section className="mt-6">
+          <section ref={menuRef} className="mt-6 scroll-mt-4">
             <h2 className="mb-2 text-sm font-semibold text-slate-500">
               Menu — {restoActif.nom}
             </h2>
-            {catsDuResto.length === 0 ? (
+
+            {/* La carte en photo : le client y lit les prix */}
+            {photosDuResto.length > 0 && (
+              <div className="card mb-4 p-4">
+                <p className="mb-2 text-sm font-semibold text-slate-800">
+                  📸 La carte du restaurant
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {photosDuResto.map((photo) => (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() => setPhotoZoom(photo)}
+                      className="block"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.url}
+                        alt={photo.legende ?? "Carte du restaurant"}
+                        className="h-24 w-full rounded-xl border border-slate-200 object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Touchez une photo pour l&apos;agrandir et lire les prix.
+                </p>
+              </div>
+            )}
+
+            {photosDuResto.length === 0 && produitsDuResto.length === 0 ? (
               <div className="card p-6 text-center text-sm text-slate-500">
-                Ce restaurant n'a pas encore de menu en ligne.
+                Ce restaurant n&apos;a pas encore de menu en ligne. Écrivez
+                directement ce que vous souhaitez ci-dessous.
               </div>
             ) : (
               <div className="space-y-5">
-                {catsDuResto.map((cat) => {
-                  const prods = produits.filter((p) => p.categorie_id === cat.id);
-                  if (prods.length === 0) return null;
+                {groupesMenu.map((groupe) => {
+                  const prods = groupe.produits;
                   return (
-                    <div key={cat.id}>
-                      <h3 className="mb-2 font-bold text-slate-800">{cat.nom}</h3>
+                    <div key={groupe.titre ?? "sans-categorie"}>
+                      {groupe.titre && (
+                        <h3 className="mb-2 font-bold text-slate-800">
+                          {groupe.titre}
+                        </h3>
+                      )}
                       <div className="space-y-2">
                         {prods.map((p) => (
                           <div
@@ -265,17 +480,67 @@ export function Vitrine({
                 })}
               </div>
             )}
+
+            {/* Commande écrite librement, d'après la carte en photo */}
+            <div className="card mt-4 p-4">
+              <label className="label" htmlFor="demande-libre">
+                ✍️ Écrivez votre commande
+              </label>
+              <textarea
+                id="demande-libre"
+                value={demandeLibre}
+                onChange={(e) => setDemandeLibre(e.target.value)}
+                className="input min-h-[90px]"
+                placeholder={"Ex : 2 pizzas margherita, 1 coca 1L, sans oignons"}
+                maxLength={1000}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Indiquez ce que vous voulez tel que vous le lisez sur la carte.
+                Le livreur vous confirmera le montant exact.
+              </p>
+            </div>
           </section>
         )}
       </div>
 
+      {/* Photo de la carte en plein écran */}
+      {photoZoom && (
+        <div
+          onClick={() => setPhotoZoom(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+        >
+          <div className="max-h-full max-w-3xl overflow-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoZoom.url}
+              alt={photoZoom.legende ?? "Carte du restaurant"}
+              className="w-full rounded-xl"
+            />
+          </div>
+          <button
+            onClick={() => setPhotoZoom(null)}
+            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white text-lg"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Barre panier flottante */}
-      {nbArticles > 0 && !checkout && (
+      {commandePrete && !checkout && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-slate-500">{nbArticles} article{nbArticles > 1 ? "s" : ""}</p>
-              <p className="font-bold">{formatPrix(total)}</p>
+              <p className="text-sm text-slate-500">
+                {nbArticles > 0
+                  ? `${nbArticles} article${nbArticles > 1 ? "s" : ""}`
+                  : "Commande écrite"}
+                {nbArticles > 0 && texteLibre ? " + note" : ""}
+              </p>
+              <p className="font-bold">
+                {totalIndicatif ? `dès ${formatPrix(total)}` : formatPrix(total)}
+              </p>
             </div>
             <button onClick={() => setCheckout(true)} className="btn-primary flex-1 py-3">
               Commander →
@@ -295,20 +560,37 @@ export function Vitrine({
 
             {/* Récap */}
             <div className="mb-4 rounded-xl bg-slate-50 p-3 text-sm">
+              <p className="mb-1 font-semibold text-slate-800">
+                {serviceActif
+                  ? `${serviceActif.icone} ${serviceActif.nom}`
+                  : `🍽️ ${restoActif?.nom ?? ""}`}
+              </p>
               {items.map((it) => (
                 <div key={it.produit.id} className="flex justify-between py-0.5">
                   <span>{it.quantite}× {it.produit.nom}</span>
                   <span>{formatPrix(Number(it.produit.prix) * it.quantite)}</span>
                 </div>
               ))}
+              {texteLibre && (
+                <div className="whitespace-pre-line rounded-lg bg-white px-3 py-2 text-slate-700">
+                  <span className="text-slate-400">Votre demande : </span>
+                  {texteLibre}
+                </div>
+              )}
               <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-slate-500">
                 <span>Frais de livraison</span>
                 <span>{formatPrix(frais)}</span>
               </div>
               <div className="mt-1 flex justify-between font-bold text-slate-900">
-                <span>Total</span>
+                <span>{totalIndicatif ? "Total (hors demande écrite)" : "Total"}</span>
                 <span>{formatPrix(total)}</span>
               </div>
+              {totalIndicatif && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Le montant de votre demande écrite sera confirmé par le livreur
+                  avant la livraison.
+                </p>
+              )}
             </div>
 
             {erreur && (
@@ -319,11 +601,10 @@ export function Vitrine({
 
             <form onSubmit={passerCommande} className="space-y-3">
               <input name="nom" className="input" placeholder="Votre nom" required />
-              <input
-                name="telephone"
-                type="tel"
-                className="input"
-                placeholder="Téléphone (ex : +216 …)"
+              <ChampTelephone
+                label={null}
+                value={telephone}
+                onChange={setTelephone}
                 required
               />
               <input name="adresse" className="input" placeholder="Adresse de livraison" required />
@@ -333,7 +614,11 @@ export function Vitrine({
                 placeholder="Commentaire (optionnel)"
               />
               <button disabled={envoi} className="btn-primary w-full py-3">
-                {envoi ? "Envoi…" : `Confirmer · ${formatPrix(total)}`}
+                {envoi
+                  ? "Envoi…"
+                  : totalIndicatif
+                    ? "Envoyer ma commande"
+                    : `Confirmer · ${formatPrix(total)}`}
               </button>
             </form>
           </div>

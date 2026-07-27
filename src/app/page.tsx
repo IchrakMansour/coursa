@@ -56,7 +56,7 @@ export default function LandingPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { icon: "🔗", t: "Page publique personnalisée", d: "Un lien unique de type Linktree pour partager vos services et prendre des commandes." },
-            { icon: "🍕", t: "Restaurants partenaires", d: "Envoyez des demandes de collaboration et gérez votre réseau de restaurants." },
+            { icon: "🍕", t: "Restaurants partenaires", d: "Ajoutez vos restaurants et photographiez leur carte : les prix toujours sous les yeux." },
             { icon: "📦", t: "Gestion des commandes", d: "Suivez chaque commande, de « nouvelle » à « livrée », en temps réel." },
             { icon: "👥", t: "CRM clients", d: "Historique, adresses et fréquence de commande pour fidéliser votre clientèle." },
             { icon: "📊", t: "Statistiques", d: "Revenus, nombre de livraisons et performance au jour, à la semaine, au mois." },

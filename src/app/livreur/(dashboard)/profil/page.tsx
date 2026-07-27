@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { majProfil, ajouterService, supprimerService } from "./actions";
 import { ServiceChip } from "@/components/livreur/ServiceChip";
+import { ChampTelephone } from "@/components/ChampTelephone";
 import type { Livreur, Service } from "@/types/database";
 
 export default async function ProfilPage() {
@@ -88,12 +89,11 @@ export default async function ProfilPage() {
           </div>
         </div>
         <div>
-          <label className="label">WhatsApp</label>
-          <input
+          <ChampTelephone
             name="whatsapp"
-            className="input"
-            defaultValue={profile.whatsapp ?? ""}
-            placeholder="+216 20 000 002"
+            label="WhatsApp"
+            defaultValue={profile.whatsapp}
+            aide="Le numéro que vos clients contacteront depuis votre page."
           />
         </div>
         <label className="flex items-center gap-3">
@@ -114,7 +114,8 @@ export default async function ProfilPage() {
       <div className="card mt-6 p-5 sm:p-6">
         <h2 className="font-semibold text-slate-900">Services proposés</h2>
         <p className="mt-0.5 text-sm text-slate-500">
-          Courses, pharmacie, colis… affichés sur votre vitrine.
+          Courses, pharmacie, colis… Vos clients peuvent les commander
+          directement depuis votre page, en décrivant leur besoin.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {services.map((s) => (
@@ -124,11 +125,29 @@ export default async function ProfilPage() {
             <p className="text-sm text-slate-400">Aucun service ajouté.</p>
           )}
         </div>
-        <form action={ajouterService} className="mt-4 flex gap-2">
+        <form action={ajouterService} className="mt-4 flex flex-wrap gap-2">
           <input name="icone" className="input w-16 text-center" defaultValue="📦" maxLength={2} />
-          <input name="nom" className="input flex-1" placeholder="Nom du service" required />
+          <input
+            name="nom"
+            className="input min-w-[140px] flex-1"
+            placeholder="Nom du service"
+            required
+          />
+          <input
+            name="prix"
+            type="number"
+            step="0.5"
+            min="0"
+            inputMode="decimal"
+            className="input w-28"
+            placeholder="Prix DT"
+            title="Frais de livraison — laissez vide pour « à convenir »"
+          />
           <button className="btn-secondary">Ajouter</button>
         </form>
+        <p className="mt-2 text-xs text-slate-400">
+          Prix vide ou 0 : le tarif sera annoncé comme « à convenir ».
+        </p>
       </div>
     </div>
   );

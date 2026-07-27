@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normaliserTelTunisien } from "@/lib/utils";
 import {
   sendWhatsApp,
   msgNouvelleCommandeLivreur,
@@ -14,14 +15,44 @@ interface ItemInput {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { slug, restaurant_id, client_nom, client_telephone, client_adresse, commentaire } = body;
+    const {
+      slug,
+      restaurant_id,
+      service_id,
+      client_nom,
+      client_telephone,
+      client_adresse,
+      commentaire,
+    } = body;
     const itemsInput: ItemInput[] = Array.isArray(body.items) ? body.items : [];
+    // Commande écrite en toutes lettres (carte en photo, ou demande de service)
+    const demandeLibre = String(body.demande_libre ?? "").trim().slice(0, 1000);
 
-    if (!slug || !restaurant_id || !client_nom || !client_telephone || !client_adresse) {
+    if (!slug || !client_nom || !client_telephone || !client_adresse) {
       return NextResponse.json({ error: "Champs obligatoires manquants." }, { status: 400 });
     }
-    if (itemsInput.length === 0) {
-      return NextResponse.json({ error: "Votre panier est vide." }, { status: 400 });
+    // Restauration ou service : il faut l'un ou l'autre, jamais les deux.
+    if (!restaurant_id === !service_id) {
+      return NextResponse.json(
+        { error: "Choisissez un restaurant ou un service." },
+        { status: 400 }
+      );
+    }
+
+    // Un numéro tunisien valide : c'est par là que passent le suivi WhatsApp
+    // et l'appel du livreur, on ne l'accepte pas approximatif.
+    const telephone = normaliserTelTunisien(String(client_telephone));
+    if (!telephone) {
+      return NextResponse.json(
+        { error: "Numéro de téléphone tunisien invalide (8 chiffres)." },
+        { status: 400 }
+      );
+    }
+    if (itemsInput.length === 0 && !demandeLibre) {
+      return NextResponse.json(
+        { error: "Ajoutez un produit ou écrivez votre commande." },
+        { status: 400 }
+      );
     }
 
     const supabase = createAdminClient();
@@ -37,27 +68,58 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Livreur introuvable." }, { status: 404 });
     }
 
-    // 2) Vérifie le partenariat actif + frais de livraison
-    const { data: partenariat } = await supabase
-      .from("partenariats")
-      .select("prix_livraison")
-      .eq("livreur_id", livreur.id)
-      .eq("restaurant_id", restaurant_id)
-      .eq("status", "accepted")
-      .maybeSingle();
-    if (!partenariat) {
-      return NextResponse.json(
-        { error: "Ce restaurant n'est pas disponible chez ce livreur." },
-        { status: 400 }
-      );
+    // 2) Cible de la commande : restaurant partenaire, ou service du livreur.
+    //    Dans les deux cas, c'est le serveur qui fixe les frais de livraison.
+    let frais = 0;
+    let serviceNom: string | null = null;
+
+    if (restaurant_id) {
+      const { data: partenariat } = await supabase
+        .from("partenariats")
+        .select("prix_livraison")
+        .eq("livreur_id", livreur.id)
+        .eq("restaurant_id", restaurant_id)
+        .eq("status", "accepted")
+        .maybeSingle();
+      if (!partenariat) {
+        return NextResponse.json(
+          { error: "Ce restaurant n'est pas disponible chez ce livreur." },
+          { status: 400 }
+        );
+      }
+      frais = Number(partenariat.prix_livraison) || 0;
+    } else {
+      const { data: service } = await supabase
+        .from("services")
+        .select("nom, prix, actif")
+        .eq("id", service_id)
+        .eq("livreur_id", livreur.id)
+        .maybeSingle();
+      if (!service || !service.actif) {
+        return NextResponse.json(
+          { error: "Ce service n'est pas proposé par ce livreur." },
+          { status: 400 }
+        );
+      }
+      // Un service n'a pas de catalogue : la demande écrite est indispensable.
+      if (!demandeLibre) {
+        return NextResponse.json(
+          { error: "Décrivez ce dont vous avez besoin." },
+          { status: 400 }
+        );
+      }
+      frais = Number(service.prix) || 0;
+      serviceNom = service.nom;
     }
 
     // 3) Recalcule les prix côté serveur (ne jamais faire confiance au client)
     const ids = itemsInput.map((i) => i.produit_id);
-    const { data: produits } = await supabase
-      .from("produits")
-      .select("id, nom, prix, disponible, restaurant_id")
-      .in("id", ids);
+    const { data: produits } = ids.length
+      ? await supabase
+          .from("produits")
+          .select("id, nom, prix, disponible, restaurant_id")
+          .in("id", ids)
+      : { data: [] };
 
     const items = itemsInput
       .map((i) => {
@@ -73,12 +135,12 @@ export async function POST(request: Request) {
       quantite: number;
     }[];
 
-    if (items.length === 0) {
+    // Sans demande écrite, il faut au moins un produit valide.
+    if (items.length === 0 && !demandeLibre) {
       return NextResponse.json({ error: "Produits indisponibles." }, { status: 400 });
     }
 
     const sousTotal = items.reduce((s, it) => s + it.prix_unitaire * it.quantite, 0);
-    const frais = Number(partenariat.prix_livraison) || 0;
     const total = sousTotal + frais;
 
     // 4) Enregistre / met à jour le client dans le CRM du livreur
@@ -88,7 +150,7 @@ export async function POST(request: Request) {
         {
           livreur_id: livreur.id,
           nom: client_nom,
-          telephone: client_telephone,
+          telephone,
           adresse: client_adresse,
         },
         { onConflict: "livreur_id,telephone" }
@@ -101,12 +163,15 @@ export async function POST(request: Request) {
       .from("commandes")
       .insert({
         livreur_id: livreur.id,
-        restaurant_id,
+        restaurant_id: restaurant_id ?? null,
+        service_id: service_id ?? null,
+        service_nom: serviceNom,
         client_id: client?.id ?? null,
         client_nom,
-        client_telephone,
+        client_telephone: telephone,
         client_adresse,
         commentaire: commentaire || null,
+        demande_libre: demandeLibre || null,
         status: "nouvelle",
         sous_total: sousTotal,
         frais_livraison: frais,
@@ -120,18 +185,18 @@ export async function POST(request: Request) {
     }
 
     // 6) Insère les articles
-    await supabase.from("commande_items").insert(
-      items.map((it) => ({ ...it, commande_id: commande.id }))
-    );
+    if (items.length > 0) {
+      await supabase.from("commande_items").insert(
+        items.map((it) => ({ ...it, commande_id: commande.id }))
+      );
+    }
 
     // 7) Notifications WhatsApp
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const { data: resto } = await supabase
-      .from("restaurants")
-      .select("nom")
-      .eq("id", restaurant_id)
-      .single();
+    const { data: resto } = restaurant_id
+      ? await supabase.from("restaurants").select("nom").eq("id", restaurant_id).single()
+      : { data: null };
     const { data: livreurProfile } = await supabase
       .from("profiles")
       .select("whatsapp, phone")
@@ -143,7 +208,7 @@ export async function POST(request: Request) {
       await sendWhatsApp(
         numLivreur,
         msgNouvelleCommandeLivreur({
-          restoNom: resto?.nom ?? "Restaurant",
+          restoNom: resto?.nom ?? serviceNom ?? "Course",
           clientNom: client_nom,
           adresse: client_adresse,
           lien: `${appUrl}/livreur/commandes`,
@@ -152,7 +217,7 @@ export async function POST(request: Request) {
     }
 
     await sendWhatsApp(
-      client_telephone,
+      telephone,
       msgConfirmationClient({
         reference: commande.reference,
         lienSuivi: `${appUrl}/suivi/${commande.id}`,

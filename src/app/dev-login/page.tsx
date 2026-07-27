@@ -13,8 +13,7 @@ import { APP_NAME } from "@/lib/constants";
 // ============================================================
 
 const COMPTES = [
-  { label: "Ahmed — Livreur", phone: "+21620000002", dest: "/livreur", icon: "🛵", desc: "Vitrine, commandes, CRM, stats" },
-  { label: "Pizza House — Restaurant", phone: "+21620000003", dest: "/restaurant", icon: "🍽️", desc: "Menu, livreurs, commandes" },
+  { label: "Ahmed — Livreur", phone: "+21620000002", dest: "/livreur", icon: "🛵", desc: "Vitrine, restaurants, commandes, CRM" },
   { label: "Administrateur", phone: "+21620000001", dest: "/admin", icon: "🛠️", desc: "Utilisateurs, finances, stats" },
 ];
 

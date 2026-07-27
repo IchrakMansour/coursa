@@ -28,11 +28,18 @@ export function CommandeCard({ commande }: { commande: Commande }) {
 
       {/* Détails */}
       <div className="mt-3 space-y-1.5 rounded-xl bg-slate-50 p-3 text-sm">
-        {commande.restaurant?.nom && (
+        {commande.restaurant?.nom ? (
           <p>
             <span className="text-slate-400">Restaurant :</span>{" "}
             <span className="font-medium">{commande.restaurant.nom}</span>
           </p>
+        ) : (
+          commande.service_nom && (
+            <p>
+              <span className="text-slate-400">Service :</span>{" "}
+              <span className="font-medium">{commande.service_nom}</span>
+            </p>
+          )
         )}
         <p>
           <span className="text-slate-400">Client :</span>{" "}
@@ -53,6 +60,18 @@ export function CommandeCard({ commande }: { commande: Commande }) {
           <p className="text-slate-500 italic">« {commande.commentaire} »</p>
         )}
       </div>
+
+      {/* Commande écrite par le client : à confirmer au téléphone */}
+      {commande.demande_libre && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+            ✍️ Demande écrite du client — montant à confirmer
+          </p>
+          <p className="mt-1 whitespace-pre-line text-sm text-amber-900">
+            {commande.demande_libre}
+          </p>
+        </div>
+      )}
 
       {/* Articles */}
       {commande.items && commande.items.length > 0 && (
