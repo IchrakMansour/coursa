@@ -16,9 +16,19 @@ export default async function RestaurantsPage() {
     .eq("livreur_id", profile.id)
     .order("created_at", { ascending: false });
 
-  const partenariats: Partenariat[] = (data as unknown as Partenariat[]) ?? [];
-  const actifs = partenariats.filter((p) => p.status === "accepted");
-  const enAttente = partenariats.filter((p) => p.status === "pending");
+  // Tous les restaurants sont ajoutés par le livreur : pas d'invitation à valider.
+  const actifs: Partenariat[] = (data as unknown as Partenariat[]) ?? [];
+
+  // Nombre de produits par restaurant : un menu vide n'est pas commandable,
+  // il faut que ça se voie tout de suite dans la liste.
+  const restoIds = actifs.map((p) => p.restaurant_id);
+  const { data: prods } = restoIds.length
+    ? await supabase.from("produits").select("restaurant_id").in("restaurant_id", restoIds)
+    : { data: [] };
+  const nbProduits: Record<string, number> = {};
+  for (const p of (prods as { restaurant_id: string }[]) ?? []) {
+    nbProduits[p.restaurant_id] = (nbProduits[p.restaurant_id] ?? 0) + 1;
+  }
 
   return (
     <div>
@@ -28,19 +38,6 @@ export default async function RestaurantsPage() {
       />
 
       <AddRestaurantForm action={ajouterRestaurant} />
-
-      {enAttente.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Invitations en attente ({enAttente.length})
-          </h2>
-          <div className="space-y-3">
-            {enAttente.map((p) => (
-              <RestaurantRow key={p.id} partenariat={p} />
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="mt-8">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
@@ -55,7 +52,11 @@ export default async function RestaurantsPage() {
         ) : (
           <div className="space-y-3">
             {actifs.map((p) => (
-              <RestaurantRow key={p.id} partenariat={p} />
+              <RestaurantRow
+                key={p.id}
+                partenariat={p}
+                nbProduits={nbProduits[p.restaurant_id] ?? 0}
+              />
             ))}
           </div>
         )}

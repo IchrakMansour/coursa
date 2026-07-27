@@ -24,13 +24,7 @@ export async function requireRole(role: UserRole): Promise<Profile> {
   if (!profile) redirect("/connexion");
   if (profile.role !== role) {
     // Redirige vers l'espace correspondant au rôle réel
-    const home =
-      profile.role === "admin"
-        ? "/admin"
-        : profile.role === "restaurant"
-          ? "/restaurant"
-          : "/livreur";
-    redirect(home);
+    redirect(profile.role === "admin" ? "/admin" : "/livreur");
   }
   return profile;
 }

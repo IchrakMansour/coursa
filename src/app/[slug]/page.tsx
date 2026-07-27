@@ -2,7 +2,14 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Vitrine } from "@/components/public/Vitrine";
-import type { Livreur, Service, Restaurant, Produit, MenuCategorie } from "@/types/database";
+import type {
+  Livreur,
+  Service,
+  Restaurant,
+  Produit,
+  MenuCategorie,
+  MenuPhoto,
+} from "@/types/database";
 
 // Réserve les routes système pour ne pas les traiter comme des slugs
 const RESERVED = new Set([
@@ -83,18 +90,26 @@ export default async function VitrinePage({
 
   let categories: MenuCategorie[] = [];
   let produits: Produit[] = [];
+  let photos: MenuPhoto[] = [];
   if (restoIds.length > 0) {
-    const [{ data: catsData }, { data: prodsData }] = await Promise.all([
-      supabase.from("menu_categories").select("*").in("restaurant_id", restoIds).order("position"),
-      supabase
-        .from("produits")
-        .select("*")
-        .in("restaurant_id", restoIds)
-        .eq("disponible", true)
-        .order("nom"),
-    ]);
+    const [{ data: catsData }, { data: prodsData }, { data: photosData }] =
+      await Promise.all([
+        supabase.from("menu_categories").select("*").in("restaurant_id", restoIds).order("position"),
+        supabase
+          .from("produits")
+          .select("*")
+          .in("restaurant_id", restoIds)
+          .eq("disponible", true)
+          .order("nom"),
+        supabase
+          .from("menu_photos")
+          .select("*")
+          .in("restaurant_id", restoIds)
+          .order("position"),
+      ]);
     categories = (catsData as MenuCategorie[]) ?? [];
     produits = (prodsData as Produit[]) ?? [];
+    photos = (photosData as MenuPhoto[]) ?? [];
   }
 
   return (
@@ -105,6 +120,7 @@ export default async function VitrinePage({
       restaurants={restaurants}
       categories={categories}
       produits={produits}
+      photos={photos}
     />
   );
 }

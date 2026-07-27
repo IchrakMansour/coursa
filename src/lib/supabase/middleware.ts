@@ -38,8 +38,16 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // L'espace restaurant n'existe plus : tout passe par l'espace livreur.
+  if (path === "/restaurant" || path.startsWith("/restaurant/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/livreur";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   // Routes protégées : nécessitent une session
-  const protectedPrefixes = ["/livreur", "/restaurant", "/admin"];
+  const protectedPrefixes = ["/livreur", "/admin"];
   const isProtected = protectedPrefixes.some((p) => path.startsWith(p));
 
   if (isProtected && !user) {

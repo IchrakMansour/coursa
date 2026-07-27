@@ -10,7 +10,6 @@ import type { Profile } from "@/types/database";
 
 const ROLE_LABELS: Record<string, string> = {
   livreur: "Livreur",
-  restaurant: "Restaurant",
   client: "Client",
   admin: "Admin",
 };

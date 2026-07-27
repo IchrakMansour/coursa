@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { telInternational } from "@/lib/utils";
 
 export async function majProfil(formData: FormData) {
   const profile = await requireRole("livreur");
@@ -22,10 +23,11 @@ export async function majProfil(formData: FormData) {
     })
     .eq("id", profile.id);
 
-  // WhatsApp du profil
+  // WhatsApp du profil, stocké au format international (+216 par défaut)
+  const saisie = String(formData.get("whatsapp") || "").trim();
   await supabase
     .from("profiles")
-    .update({ whatsapp: String(formData.get("whatsapp") || "") || null })
+    .update({ whatsapp: saisie ? telInternational(saisie) ?? saisie : null })
     .eq("id", profile.id);
 
   revalidatePath("/livreur/profil");
@@ -41,6 +43,8 @@ export async function ajouterService(formData: FormData) {
     livreur_id: profile.id,
     nom,
     icone: String(formData.get("icone") || "📦"),
+    // 0 = prix à convenir avec le client
+    prix: Number(String(formData.get("prix") || "0").replace(",", ".")) || 0,
   });
   revalidatePath("/livreur/profil");
 }

@@ -43,6 +43,30 @@ export const NEXT_STATUS: Partial<Record<CommandeStatus, CommandeStatus>> = {
 
 export const DEVISE = "DT";
 
+// ---- Suivi de position en direct ----
+
+// Statuts pendant lesquels le livreur est en course : c'est la seule
+// fenêtre où sa position est partagée.
+export const STATUTS_EN_COURSE: CommandeStatus[] = [
+  "acceptee",
+  "preparation",
+  "prete",
+  "recuperation",
+  "en_livraison",
+];
+
+// Canal Realtime dédié à une commande. Le nom contient l'UUID de la
+// commande : impossible à deviner, donc seul le porteur du lien de
+// suivi peut écouter la position du livreur.
+export function canalSuivi(commandeId: string) {
+  return `suivi-${commandeId}`;
+}
+
+// Cadence d'émission de la position
+export const POSITION_INTERVALLE_MS = 10_000; // 1 point toutes les 10 s max
+export const POSITION_DISTANCE_M = 25; // ou dès 25 m parcourus
+export const POSITION_PERSIST_MS = 60_000; // sauvegarde en base 1×/min
+
 export const PLANS = [
   { id: "free", nom: "Gratuit", prix: 0, desc: "Pour démarrer", features: ["Page publique", "Jusqu'à 2 restaurants", "10 commandes/mois"] },
   { id: "pro", nom: "Pro", prix: 29, desc: "Le plus populaire", features: ["Restaurants illimités", "Commandes illimitées", "CRM clients", "Notifications WhatsApp", "Statistiques avancées"] },

@@ -14,7 +14,7 @@ export default async function UtilisateursPage({
   const supabase = createAdminClient();
 
   let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
-  if (role && ["livreur", "restaurant", "client", "admin"].includes(role)) {
+  if (role && ["livreur", "client", "admin"].includes(role)) {
     query = query.eq("role", role);
   }
   const { data } = await query;
@@ -23,7 +23,6 @@ export default async function UtilisateursPage({
   const filtres = [
     { key: "", label: "Tous" },
     { key: "livreur", label: "Livreurs" },
-    { key: "restaurant", label: "Restaurants" },
     { key: "client", label: "Clients" },
   ];
 
