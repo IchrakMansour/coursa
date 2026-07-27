@@ -20,6 +20,27 @@ interface CommandeEnCours {
   reference: string;
 }
 
+// On mémorise que le livreur a activé le partage, pour le reprendre après une
+// actualisation de la page au lieu de lui redemander d'activer à chaque fois.
+const CLE_PARTAGE = "livrapro:partage-position";
+
+function memoriserIntention(actif: boolean) {
+  try {
+    if (actif) localStorage.setItem(CLE_PARTAGE, "1");
+    else localStorage.removeItem(CLE_PARTAGE);
+  } catch {
+    // Stockage indisponible (navigation privée) : on continue sans mémoire.
+  }
+}
+
+function intentionMemorisee(): boolean {
+  try {
+    return localStorage.getItem(CLE_PARTAGE) === "1";
+  } catch {
+    return false;
+  }
+}
+
 // Partage de la position du livreur pendant ses courses.
 // Chaque point part en Realtime Broadcast sur le canal de la commande
 // (personne d'autre que le porteur du lien de suivi ne peut l'écouter),
@@ -60,6 +81,7 @@ export function PartagePosition({
     await wakeLockRef.current?.release().catch(() => {});
     wakeLockRef.current = null;
 
+    memoriserIntention(false);
     setActif(false);
     setDerniereMaj(null);
   }, []);
@@ -141,8 +163,29 @@ export function PartagePosition({
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
     );
 
+    memoriserIntention(true);
     setActif(true);
   }, [arreter]);
+
+  // Reprise après une actualisation : si le livreur avait activé le partage et
+  // qu'il a encore des courses, on relance automatiquement — mais uniquement si
+  // la permission de localisation est déjà accordée, pour ne pas afficher une
+  // demande inattendue au chargement de la page.
+  const repriseTenteeRef = useRef(false);
+  useEffect(() => {
+    if (repriseTenteeRef.current) return;
+    if (commandes.length === 0 || !intentionMemorisee()) return;
+    repriseTenteeRef.current = true;
+
+    const perms = (navigator as Navigator).permissions;
+    if (!perms?.query) return; // Sans l'API Permissions, on laisse activer à la main.
+    perms
+      .query({ name: "geolocation" as PermissionName })
+      .then((res) => {
+        if (res.state === "granted") demarrer();
+      })
+      .catch(() => {});
+  }, [commandes.length, demarrer]);
 
   // Plus de course en cours : on coupe et on efface la position affichée.
   useEffect(() => {
