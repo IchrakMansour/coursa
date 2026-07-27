@@ -11,6 +11,13 @@ import type {
   MenuPhoto,
 } from "@/types/database";
 
+// Page publique du livreur : elle dépend de `is_published` et du menu, qui
+// changent depuis le dashboard. Sans ça, Next/Vercel peut servir un rendu en
+// cache — typiquement un 404 mis en cache avant la publication — à certains
+// visiteurs (un autre téléphone, un autre réseau) alors qu'elle marche
+// ailleurs. On force donc un rendu à chaque requête pour refléter la BDD.
+export const dynamic = "force-dynamic";
+
 // Réserve les routes système pour ne pas les traiter comme des slugs
 const RESERVED = new Set([
   "livreur", "restaurant", "admin", "connexion", "deconnexion",
