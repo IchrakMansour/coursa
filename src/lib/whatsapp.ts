@@ -31,6 +31,9 @@ export async function sendWhatsApp(to: string, message: string): Promise<boolean
   }
 
   try {
+    // Délai maximum : l'API Meta peut être lente ou ne jamais répondre (ex.
+    // numéro hors liste de destinataires autorisés en mode test). Sans borne,
+    // l'appel resterait bloqué et figerait la commande côté client.
     const res = await fetch(
       `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`,
       {
@@ -45,6 +48,7 @@ export async function sendWhatsApp(to: string, message: string): Promise<boolean
           type: "text",
           text: { body: message },
         }),
+        signal: AbortSignal.timeout(5000),
       }
     );
     if (!res.ok) {

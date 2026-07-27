@@ -165,18 +165,34 @@ export function Vitrine({
         quantite: it.quantite,
       })),
     };
-    const res = await fetch("/api/commandes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    setEnvoi(false);
-    if (!res.ok) {
-      setErreur(data.error || "Une erreur est survenue.");
-      return;
+
+    // Filet de sécurité réseau : sans délai maximum, une requête qui n'aboutit
+    // pas (connexion instable d'un téléphone) laisserait le bouton figé sur
+    // « Envoi… » indéfiniment. On borne l'attente et on réactive toujours le
+    // bouton dans le `finally`.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch("/api/commandes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErreur(data.error || "Une erreur est survenue.");
+        return;
+      }
+      router.push(`/suivi/${data.id}`);
+    } catch {
+      setErreur(
+        "L'envoi a échoué (connexion trop lente ou interrompue). Vérifiez votre réseau et réessayez."
+      );
+    } finally {
+      clearTimeout(timer);
+      setEnvoi(false);
     }
-    router.push(`/suivi/${data.id}`);
   }
 
   // Services proposés en plus de la restauration
