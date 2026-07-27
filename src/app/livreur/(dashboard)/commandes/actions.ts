@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { sendWhatsApp, msgConfirmationClient } from "@/lib/whatsapp";
-import { STATUTS_EN_COURSE } from "@/lib/constants";
+import { STATUTS_EN_COURSE, canalSuivi } from "@/lib/constants";
+import { diffuser } from "@/lib/realtime";
 import type { CommandeStatus } from "@/types/database";
 
 export async function changerStatut(commandeId: string, statut: CommandeStatus) {
@@ -18,6 +19,9 @@ export async function changerStatut(commandeId: string, statut: CommandeStatus) 
     .eq("livreur_id", profile.id)
     .select("*")
     .single();
+
+  // Pousse le nouveau statut vers la page de suivi du client
+  await diffuser(canalSuivi(commandeId), "statut", { status: statut });
 
   // Notifie le client au moment de la mise en livraison
   if (commande && statut === "en_livraison" && commande.client_telephone) {
