@@ -60,36 +60,19 @@ export function SuiviClient({ commande: initial }: { commande: Commande }) {
   const etapeActuelle = ORDRE[commande.status] ?? 0;
   const enCourse = STATUTS_EN_COURSE.includes(commande.status);
 
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`commande-${commande.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "commandes",
-          filter: `id=eq.${commande.id}`,
-        },
-        (payload) => {
-          setCommande((c) => ({ ...c, ...(payload.new as Commande) }));
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [commande.id]);
-
-  // Position du livreur en direct : canal nommé d'après l'id de la commande,
-  // que seul le porteur de ce lien de suivi connaît.
+  // Tout le direct passe par le canal de la commande : sa position et son
+  // statut. Le nom du canal contient l'id de la commande, que seul le porteur
+  // de ce lien connaît.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
       .channel(canalSuivi(commande.id))
       .on("broadcast", { event: "position" }, ({ payload }) => {
         setPosition(payload as PositionLivreur);
+      })
+      .on("broadcast", { event: "statut" }, ({ payload }) => {
+        const statut = (payload as { status?: CommandeStatus }).status;
+        if (statut) setCommande((c) => ({ ...c, status: statut }));
       })
       .subscribe();
     return () => {
