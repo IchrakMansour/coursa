@@ -35,6 +35,30 @@ Les restaurants sont des *fiches* créées et gérées par le livreur
 
 ---
 
+## ☁️ Déploiement
+
+Le site tourne sur Vercel : **https://coursa-eight.vercel.app**
+Chaque `git push` sur `main` déclenche un déploiement en production.
+
+Variables d'environnement à définir dans Vercel (Production et Preview) :
+
+| Variable | Rôle |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | clé publique, côté navigateur |
+| `SUPABASE_SERVICE_ROLE_KEY` | clé serveur — ne jamais l'exposer au client |
+| `NEXT_PUBLIC_APP_URL` | URL publique du site, utilisée dans les liens de suivi |
+| `WHATSAPP_ENABLED` | `true` pour envoyer réellement les messages |
+
+`NEXT_PUBLIC_ENABLE_DEV_LOGIN` ne doit **jamais** être définie en production :
+elle ouvre `/dev-login`, une connexion sans mot de passe.
+
+Côté Supabase, renseigner l'URL du site dans *Authentication → URL
+Configuration* (Site URL et Redirect URLs), sinon les liens de confirmation
+d'inscription pointent vers `localhost`.
+
+---
+
 ## 🚀 Installation
 
 ### 1. Prérequis
