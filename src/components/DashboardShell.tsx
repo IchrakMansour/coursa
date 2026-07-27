@@ -11,6 +11,22 @@ export interface NavItem {
   icon: string;
 }
 
+// Déconnexion par formulaire POST, jamais par un lien : Next.js préfetche
+// les liens visibles en production, ce qui déconnectait l'utilisateur sans
+// qu'il ait cliqué.
+function BoutonDeconnexion({ className = "" }: { className?: string }) {
+  return (
+    <form action="/deconnexion" method="post" className={className}>
+      <button
+        type="submit"
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+      >
+        <span className="text-lg">🚪</span> Déconnexion
+      </button>
+    </form>
+  );
+}
+
 export function DashboardShell({
   nav,
   espace,
@@ -65,9 +81,7 @@ export function DashboardShell({
       {open && (
         <div className="border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
           <NavLinks />
-          <Link href="/deconnexion" className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
-            <span className="text-lg">🚪</span> Déconnexion
-          </Link>
+          <BoutonDeconnexion className="mt-2" />
         </div>
       )}
 
@@ -86,9 +100,7 @@ export function DashboardShell({
             <div className="px-3 py-2 text-sm">
               <p className="font-semibold text-slate-800">{userName}</p>
             </div>
-            <Link href="/deconnexion" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
-              <span className="text-lg">🚪</span> Déconnexion
-            </Link>
+            <BoutonDeconnexion />
           </div>
         </aside>
 
