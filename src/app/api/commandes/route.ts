@@ -191,38 +191,45 @@ export async function POST(request: Request) {
       );
     }
 
-    // 7) Notifications WhatsApp
+    // 7) Notifications WhatsApp — la commande est déjà enregistrée, ces envois
+    //    ne doivent pas retarder ni bloquer la réponse au client. On les lance
+    //    en parallèle et chaque appel est borné dans le temps (voir
+    //    sendWhatsApp) : un destinataire injoignable (ex. numéro hors liste de
+    //    test WhatsApp) ne peut plus figer la commande sur « Envoi… ».
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const { data: resto } = restaurant_id
-      ? await supabase.from("restaurants").select("nom").eq("id", restaurant_id).single()
-      : { data: null };
-    const { data: livreurProfile } = await supabase
-      .from("profiles")
-      .select("whatsapp, phone")
-      .eq("id", livreur.id)
-      .single();
+    const [{ data: resto }, { data: livreurProfile }] = await Promise.all([
+      restaurant_id
+        ? supabase.from("restaurants").select("nom").eq("id", restaurant_id).single()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("profiles")
+        .select("whatsapp, phone")
+        .eq("id", livreur.id)
+        .single(),
+    ]);
 
     const numLivreur = livreurProfile?.whatsapp || livreurProfile?.phone;
-    if (numLivreur) {
-      await sendWhatsApp(
-        numLivreur,
-        msgNouvelleCommandeLivreur({
-          restoNom: resto?.nom ?? serviceNom ?? "Course",
-          clientNom: client_nom,
-          adresse: client_adresse,
-          lien: `${appUrl}/livreur/commandes`,
+    await Promise.allSettled([
+      numLivreur
+        ? sendWhatsApp(
+            numLivreur,
+            msgNouvelleCommandeLivreur({
+              restoNom: resto?.nom ?? serviceNom ?? "Course",
+              clientNom: client_nom,
+              adresse: client_adresse,
+              lien: `${appUrl}/livreur/commandes`,
+            })
+          )
+        : Promise.resolve(),
+      sendWhatsApp(
+        telephone,
+        msgConfirmationClient({
+          reference: commande.reference,
+          lienSuivi: `${appUrl}/suivi/${commande.id}`,
         })
-      );
-    }
-
-    await sendWhatsApp(
-      telephone,
-      msgConfirmationClient({
-        reference: commande.reference,
-        lienSuivi: `${appUrl}/suivi/${commande.id}`,
-      })
-    );
+      ),
+    ]);
 
     return NextResponse.json({ id: commande.id, reference: commande.reference });
   } catch (e) {
