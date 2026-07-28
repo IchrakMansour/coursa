@@ -20,26 +20,48 @@ function base64urlToUint8Array(base64url: string): Uint8Array {
 
 // Permet au livreur de recevoir une notification à chaque nouvelle commande,
 // même l'application fermée. S'affiche seulement si l'appareil sait le faire.
+// - "cache"        : appareil incapable de push (ou fonctionnalité non
+//                    configurée) → on n'affiche rien.
+// - "ios-installer": iPhone/iPad dans Safari → le push n'est possible qu'une
+//                    fois l'app ajoutée à l'écran d'accueil ; on l'explique.
+// - "pret"         : le push est disponible → bouton Activer/Désactiver.
+type EtatPush = "cache" | "ios-installer" | "pret";
+
 export function NotificationsPush() {
-  const [supporte, setSupporte] = useState(false);
+  const [etat, setEtat] = useState<EtatPush>("cache");
   const [actif, setActif] = useState(false);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
-    const ok =
+    if (!VAPID_PUBLIC) return; // Push non configuré côté serveur.
+
+    const pushOk =
       "serviceWorker" in navigator &&
       "PushManager" in window &&
-      "Notification" in window &&
-      !!VAPID_PUBLIC;
-    setSupporte(ok);
-    if (!ok) return;
+      "Notification" in window;
 
-    // Reflète l'état réel : cet appareil est-il déjà abonné ?
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setActif(!!sub))
-      .catch(() => {});
+    if (pushOk) {
+      setEtat("pret");
+      // Reflète l'état réel : cet appareil est-il déjà abonné ?
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => setActif(!!sub))
+        .catch(() => {});
+      return;
+    }
+
+    // Sur iPhone/iPad, PushManager n'existe que dans l'app installée à
+    // l'écran d'accueil : on guide l'utilisateur au lieu de nous cacher.
+    const iOS =
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      // iPad récent se présente comme un Mac tactile
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const installee =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true;
+    if (iOS && !installee) setEtat("ios-installer");
   }, []);
 
   const activer = useCallback(async () => {
@@ -102,7 +124,39 @@ export function NotificationsPush() {
     }
   }, []);
 
-  if (!supporte) return null;
+  if (etat === "cache") return null;
+
+  // iPhone/iPad dans Safari : on explique comment débloquer les notifications.
+  if (etat === "ios-installer") {
+    return (
+      <div className="card mb-6 p-5">
+        <h2 className="font-bold text-slate-900">🔔 Notifications de commande</h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Sur iPhone, les notifications ne sont possibles qu&apos;en ajoutant
+          l&apos;application à l&apos;écran d&apos;accueil :
+        </p>
+        <ol className="mt-3 space-y-1 text-sm text-slate-600">
+          <li>
+            1. Touchez <span className="font-semibold">Partager</span>{" "}
+            (l&apos;icône <span className="font-semibold">⬆️</span> en bas de
+            Safari).
+          </li>
+          <li>
+            2. Choisissez{" "}
+            <span className="font-semibold">
+              « Sur l&apos;écran d&apos;accueil »
+            </span>
+            .
+          </li>
+          <li>
+            3. Ouvrez LivraPro depuis la nouvelle icône, puis revenez ici : le
+            bouton <span className="font-semibold">« Activer »</span>{" "}
+            apparaîtra.
+          </li>
+        </ol>
+      </div>
+    );
+  }
 
   return (
     <div className="card mb-6 p-5">
