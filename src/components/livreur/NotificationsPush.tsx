@@ -20,12 +20,13 @@ function base64urlToUint8Array(base64url: string): Uint8Array {
 
 // Permet au livreur de recevoir une notification à chaque nouvelle commande,
 // même l'application fermée. S'affiche seulement si l'appareil sait le faire.
-// - "cache"        : appareil incapable de push (ou fonctionnalité non
-//                    configurée) → on n'affiche rien.
+// - "cache"        : appareil incapable de push → on n'affiche rien.
 // - "ios-installer": iPhone/iPad dans Safari → le push n'est possible qu'une
 //                    fois l'app ajoutée à l'écran d'accueil ; on l'explique.
+// - "non-configure": l'appareil sait recevoir des push mais la clé VAPID
+//                    publique manque dans le déploiement → message clair.
 // - "pret"         : le push est disponible → bouton Activer/Désactiver.
-type EtatPush = "cache" | "ios-installer" | "pret";
+type EtatPush = "cache" | "ios-installer" | "non-configure" | "pret";
 
 export function NotificationsPush() {
   const [etat, setEtat] = useState<EtatPush>("cache");
@@ -34,14 +35,18 @@ export function NotificationsPush() {
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!VAPID_PUBLIC) return; // Push non configuré côté serveur.
-
     const pushOk =
       "serviceWorker" in navigator &&
       "PushManager" in window &&
       "Notification" in window;
 
     if (pushOk) {
+      // L'appareil sait recevoir des push : reste à savoir si le serveur est
+      // configuré (clé VAPID publique présente au build).
+      if (!VAPID_PUBLIC) {
+        setEtat("non-configure");
+        return;
+      }
       setEtat("pret");
       // Reflète l'état réel : cet appareil est-il déjà abonné ?
       navigator.serviceWorker.ready
@@ -125,6 +130,19 @@ export function NotificationsPush() {
   }, []);
 
   if (etat === "cache") return null;
+
+  // Appareil compatible mais clé VAPID absente du déploiement.
+  if (etat === "non-configure") {
+    return (
+      <div className="card mb-6 p-5">
+        <h2 className="font-bold text-slate-900">🔔 Notifications de commande</h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Les notifications ne sont pas encore activées sur le serveur.
+          Réessayez après la prochaine mise à jour.
+        </p>
+      </div>
+    );
+  }
 
   // iPhone/iPad dans Safari : on explique comment débloquer les notifications.
   if (etat === "ios-installer") {
