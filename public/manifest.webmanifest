@@ -1,0 +1,18 @@
+{
+  "name": "LivraPro",
+  "short_name": "LivraPro",
+  "description": "Gérez votre activité de livraison : commandes, clients et notifications.",
+  "start_url": "/livreur",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1c6af1",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
