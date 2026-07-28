@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { CommandeCard } from "@/components/livreur/CommandeCard";
 import { PartagePosition } from "@/components/livreur/PartagePosition";
+import { NotificationsPush } from "@/components/livreur/NotificationsPush";
 import { STATUTS_EN_COURSE } from "@/lib/constants";
 import type { Commande } from "@/types/database";
 
@@ -28,6 +29,8 @@ export default async function CommandesPage() {
   return (
     <div>
       <PageHeader title="Commandes" desc="Gérez vos livraisons en temps réel." />
+
+      <NotificationsPush />
 
       <PartagePosition
         commandes={commandes

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWhatsApp, msgConfirmationClient } from "@/lib/whatsapp";
 import { STATUTS_EN_COURSE, canalSuivi } from "@/lib/constants";
 import { diffuser } from "@/lib/realtime";
@@ -88,4 +89,40 @@ export async function refuserCommande(commandeId: string) {
     .eq("livreur_id", profile.id);
   revalidatePath("/livreur/commandes");
   revalidatePath("/livreur");
+}
+
+// -------- Notifications push (Web Push) --------
+// L'identité est vérifiée via requireRole, puis l'écriture passe par le client
+// service_role : un upsert sur `endpoint` doit pouvoir réattribuer un appareil
+// à ce livreur, ce que le RLS ne permettrait pas simplement.
+export async function enregistrerPush(sub: {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}) {
+  const profile = await requireRole("livreur");
+  if (!sub?.endpoint || !sub.p256dh || !sub.auth) return;
+
+  const supabase = createAdminClient();
+  await supabase.from("push_subscriptions").upsert(
+    {
+      livreur_id: profile.id,
+      endpoint: sub.endpoint,
+      p256dh: sub.p256dh,
+      auth: sub.auth,
+    },
+    { onConflict: "endpoint" }
+  );
+}
+
+export async function supprimerPush(endpoint: string) {
+  const profile = await requireRole("livreur");
+  if (!endpoint) return;
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", endpoint)
+    .eq("livreur_id", profile.id);
 }

@@ -6,6 +6,7 @@ import {
   msgNouvelleCommandeLivreur,
   msgConfirmationClient,
 } from "@/lib/whatsapp";
+import { envoyerPushLivreur } from "@/lib/push";
 
 interface ItemInput {
   produit_id: string;
@@ -210,12 +211,13 @@ export async function POST(request: Request) {
     ]);
 
     const numLivreur = livreurProfile?.whatsapp || livreurProfile?.phone;
+    const cibleNom = resto?.nom ?? serviceNom ?? "Course";
     await Promise.allSettled([
       numLivreur
         ? sendWhatsApp(
             numLivreur,
             msgNouvelleCommandeLivreur({
-              restoNom: resto?.nom ?? serviceNom ?? "Course",
+              restoNom: cibleNom,
               clientNom: client_nom,
               adresse: client_adresse,
               lien: `${appUrl}/livreur/commandes`,
@@ -229,6 +231,12 @@ export async function POST(request: Request) {
           lienSuivi: `${appUrl}/suivi/${commande.id}`,
         })
       ),
+      // Notification push au livreur (même application fermée).
+      envoyerPushLivreur(livreur.id, {
+        title: "🛵 Nouvelle commande",
+        body: `${client_nom} — ${cibleNom}`,
+        url: "/livreur/commandes",
+      }),
     ]);
 
     return NextResponse.json({ id: commande.id, reference: commande.reference });
