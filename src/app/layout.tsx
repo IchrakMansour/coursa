@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+// Police géométrique nette, façon Uber (« Uber Move » étant propriétaire).
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   title: "Coursa — Gérez votre activité de livraison",
@@ -19,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1c6af1",
+  themeColor: "#0f1e35",
 };
 
 export default function RootLayout({
@@ -28,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
-      <body className="min-h-screen antialiased">{children}</body>
+    <html lang="fr" className={inter.variable}>
+      <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }
