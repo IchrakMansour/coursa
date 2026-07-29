@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_NAME } from "@/lib/constants";
+import { Icon } from "@/components/icons";
 
 export interface NavItem {
   href: string;
@@ -67,7 +68,7 @@ export function DashboardShell({
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          <span className="text-lg">{item.icon}</span>
+          <Icon name={item.icon} className="h-5 w-5" />
           {item.label}
         </Link>
       ))}
@@ -87,11 +88,11 @@ export function DashboardShell({
           <Link
             href={notificationsHref}
             aria-label="Notifications"
-            className={`btn-ghost px-3 py-2 text-lg ${
-              isActive(notificationsHref) ? "text-brand-900" : ""
+            className={`btn-ghost px-3 py-2 ${
+              isActive(notificationsHref) ? "text-brand-900" : "text-slate-600"
             }`}
           >
-            🔔
+            <Icon name="bell" className="h-6 w-6" />
           </Link>
         )}
       </div>
@@ -125,11 +126,11 @@ export function DashboardShell({
                 href={notificationsHref}
                 aria-label="Notifications"
                 title="Notifications"
-                className={`btn-ghost px-3 py-2 text-xl ${
-                  isActive(notificationsHref) ? "text-brand-900" : ""
+                className={`btn-ghost px-3 py-2 ${
+                  isActive(notificationsHref) ? "text-brand-900" : "text-slate-600"
                 }`}
               >
-                🔔
+                <Icon name="bell" className="h-6 w-6" />
               </Link>
             </header>
           )}
@@ -150,7 +151,7 @@ export function DashboardShell({
               isActive(item.href) ? "text-brand-900" : "text-slate-500"
             }`}
           >
-            <span className="text-xl leading-none">{item.icon}</span>
+            <Icon name={item.icon} className="h-6 w-6" />
             <span className="max-w-full truncate px-1">
               {item.short ?? item.label}
             </span>
@@ -163,7 +164,7 @@ export function DashboardShell({
           }`}
           aria-label="Plus"
         >
-          <span className="text-xl leading-none">⋯</span>
+          <Icon name="more" className="h-6 w-6" />
           <span>Plus</span>
         </button>
       </nav>
@@ -193,7 +194,7 @@ export function DashboardShell({
                         : "text-slate-700 hover:bg-slate-100"
                     }`}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <Icon name={item.icon} className="h-5 w-5" />
                     {item.label}
                   </Link>
                 ))}
