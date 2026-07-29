@@ -7,8 +7,9 @@ export const metadata: Metadata = {
     "La plateforme tout-en-un pour les livreurs indépendants : vitrine digitale, restaurants partenaires, commandes, clients et statistiques.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
   appleWebApp: {
     capable: true,

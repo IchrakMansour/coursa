@@ -9,7 +9,7 @@ export default function LandingPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-2 text-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="h-9 w-9 rounded-xl" />
+          <img src="/icon.png" alt="" className="h-9 w-9 rounded-xl" />
           <span>{APP_NAME}</span>
         </div>
         <nav className="flex items-center gap-2">
