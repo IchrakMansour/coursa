@@ -130,13 +130,12 @@ export function DashboardShell({
               <Link
                 href={notificationsHref}
                 aria-label="Notifications"
-                className={`btn-ghost flex items-center gap-2 px-3 py-2 text-sm font-medium ${
-                  isActive(notificationsHref)
-                    ? "text-brand-600"
-                    : "text-slate-600"
+                title="Notifications"
+                className={`btn-ghost px-3 py-2 text-xl ${
+                  isActive(notificationsHref) ? "text-brand-600" : ""
                 }`}
               >
-                <span className="text-lg">🔔</span> Notifications
+                🔔
               </Link>
             </header>
           )}
