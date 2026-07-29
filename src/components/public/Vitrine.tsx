@@ -227,8 +227,8 @@ export function Vitrine({
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
       {/* En-tête profil */}
-      <div className="bg-gradient-to-b from-brand-600 to-brand-500 px-5 pb-8 pt-10 text-center text-white">
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur">
+      <div className="bg-gradient-to-br from-brand-800 to-brand-900 px-5 pb-8 pt-10 text-center text-white">
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white/15 text-2xl font-bold ring-2 ring-gold-400/80 backdrop-blur">
           {livreur.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={livreur.photo_url} alt="" className="h-full w-full rounded-full object-cover" />
@@ -558,7 +558,7 @@ export function Vitrine({
                 {totalIndicatif ? `dès ${formatPrix(total)}` : formatPrix(total)}
               </p>
             </div>
-            <button onClick={() => setCheckout(true)} className="btn-primary flex-1 py-3">
+            <button onClick={() => setCheckout(true)} className="btn-accent flex-1 py-3">
               Commander →
             </button>
           </div>
@@ -629,7 +629,7 @@ export function Vitrine({
                 className="input min-h-[70px]"
                 placeholder="Commentaire (optionnel)"
               />
-              <button disabled={envoi} className="btn-primary w-full py-3">
+              <button disabled={envoi} className="btn-accent w-full py-3">
                 {envoi
                   ? "Envoi…"
                   : totalIndicatif
