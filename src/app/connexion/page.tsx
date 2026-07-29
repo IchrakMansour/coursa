@@ -94,7 +94,7 @@ function ConnexionInner() {
       <div className="w-full max-w-md">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2 text-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="h-9 w-9 rounded-xl" />
+          <img src="/icon.png" alt="" className="h-9 w-9 rounded-xl" />
           {APP_NAME}
         </Link>
 

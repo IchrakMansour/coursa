@@ -74,7 +74,7 @@ export function DashboardShell({
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
         <div className="flex items-center gap-2 font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="h-8 w-8 rounded-lg" />
+          <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
           {APP_NAME}
         </div>
         <div className="flex items-center gap-1">
@@ -109,7 +109,7 @@ export function DashboardShell({
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-4 lg:flex">
           <div className="mb-6 flex items-center gap-2 px-2 text-lg font-extrabold">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.svg" alt="" className="h-9 w-9 rounded-xl" />
+            <img src="/icon.png" alt="" className="h-9 w-9 rounded-xl" />
             {APP_NAME}
           </div>
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
