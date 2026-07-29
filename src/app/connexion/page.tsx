@@ -93,7 +93,8 @@ function ConnexionInner() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-50 to-white px-5 py-10">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2 text-lg font-extrabold">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">🛵</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="" className="h-9 w-9 rounded-xl" />
           {APP_NAME}
         </Link>
 

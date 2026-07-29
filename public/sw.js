@@ -1,4 +1,4 @@
-// Service worker LivraPro — notifications push du livreur.
+// Service worker Coursa — notifications push du livreur.
 // Reçoit un message push (envoyé par le serveur à la création d'une commande)
 // et affiche une notification, même quand l'application est fermée.
 

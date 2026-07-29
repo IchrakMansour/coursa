@@ -642,7 +642,7 @@ export function Vitrine({
       )}
 
       <footer className="mt-10 pb-4 text-center text-xs text-slate-400">
-        Propulsé par LivraPro
+        Propulsé par Coursa
       </footer>
     </div>
   );
