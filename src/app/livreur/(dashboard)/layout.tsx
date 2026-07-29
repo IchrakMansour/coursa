@@ -6,7 +6,6 @@ import { DashboardShell, type NavItem } from "@/components/DashboardShell";
 const NAV: NavItem[] = [
   { href: "/livreur", label: "Tableau de bord", icon: "📊" },
   { href: "/livreur/commandes", label: "Commandes", icon: "📦" },
-  { href: "/livreur/notifications", label: "Notifications", icon: "🔔" },
   { href: "/livreur/restaurants", label: "Restaurants", icon: "🍽️" },
   { href: "/livreur/clients", label: "Clients", icon: "👥" },
   { href: "/livreur/profil", label: "Mon profil", icon: "🪪" },
