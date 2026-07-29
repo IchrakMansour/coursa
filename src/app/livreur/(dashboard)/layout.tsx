@@ -31,7 +31,12 @@ export default async function LivreurLayout({
   if (!livreur) redirect("/livreur/bienvenue");
 
   return (
-    <DashboardShell nav={NAV} espace="Espace livreur" userName={profile.full_name ?? "Livreur"}>
+    <DashboardShell
+      nav={NAV}
+      espace="Espace livreur"
+      userName={profile.full_name ?? "Livreur"}
+      notificationsHref="/livreur/notifications"
+    >
       {children}
     </DashboardShell>
   );
