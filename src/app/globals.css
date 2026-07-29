@@ -17,6 +17,16 @@ body {
   font-feature-settings: "cv11", "ss01";
 }
 
+/* Hiérarchie typographique nette façon Uber : titres serrés et affirmés */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold tracking-tight;
+  }
+}
+
 /* Masquer la scrollbar horizontale des rangées scrollables */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -72,10 +72,12 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">{title}</h1>
-        {desc && <p className="mt-0.5 text-sm text-slate-500">{desc}</p>}
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+          {title}
+        </h1>
+        {desc && <p className="mt-1 text-sm text-slate-500 sm:text-base">{desc}</p>}
       </div>
       {action}
     </div>
