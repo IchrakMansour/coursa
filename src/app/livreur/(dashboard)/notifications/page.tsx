@@ -1,9 +1,11 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, EmptyState, StatusBadge } from "@/components/ui";
+import { PageHeader, EmptyState } from "@/components/ui";
 import { NotificationsPush } from "@/components/livreur/NotificationsPush";
-import { timeAgo, formatPrix } from "@/lib/utils";
+import {
+  HistoriqueNotifications,
+  type NotifItem,
+} from "@/components/livreur/HistoriqueNotifications";
 import type { Commande } from "@/types/database";
 
 export default async function NotificationsPage() {
@@ -23,6 +25,16 @@ export default async function NotificationsPage() {
 
   const commandes = (data as unknown as Commande[]) ?? [];
 
+  const items: NotifItem[] = commandes.map((c) => ({
+    id: c.id,
+    reference: c.reference,
+    clientNom: c.client_nom ?? "Client",
+    cible: c.restaurant?.nom ?? c.service_nom ?? "Course",
+    total: c.total,
+    status: c.status,
+    createdAt: c.created_at,
+  }));
+
   return (
     <div>
       <PageHeader
@@ -37,46 +49,14 @@ export default async function NotificationsPage() {
           Historique
         </h2>
 
-        {commandes.length === 0 ? (
+        {items.length === 0 ? (
           <EmptyState
             icon="🔔"
             title="Aucune notification"
             desc="Vos notifications apparaîtront ici à chaque nouvelle commande."
           />
         ) : (
-          <div className="space-y-2">
-            {commandes.map((c) => (
-              <Link
-                key={c.id}
-                href="/livreur/commandes"
-                className="card flex items-center gap-3 p-3 transition hover:bg-slate-50"
-              >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl">
-                  🛵
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-slate-900">
-                    Nouvelle commande {c.reference}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">
-                    {c.client_nom ?? "Client"} —{" "}
-                    {c.restaurant?.nom ?? c.service_nom ?? "Course"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {timeAgo(c.created_at)}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-semibold text-slate-900">
-                    {formatPrix(c.total)}
-                  </p>
-                  <div className="mt-1">
-                    <StatusBadge status={c.status} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <HistoriqueNotifications items={items} />
         )}
       </section>
     </div>
