@@ -31,11 +31,15 @@ export function DashboardShell({
   nav,
   espace,
   userName,
+  notificationsHref,
   children,
 }: {
   nav: NavItem[];
   espace: string;
   userName: string;
+  // Si fourni, une cloche 🔔 apparaît dans la barre du haut (raccourci mobile
+  // vers la page des notifications).
+  notificationsHref?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -72,9 +76,23 @@ export function DashboardShell({
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">🛵</span>
           {APP_NAME}
         </div>
-        <button onClick={() => setOpen(!open)} className="btn-ghost px-3 py-2" aria-label="Menu">
-          {open ? "✕" : "☰"}
-        </button>
+        <div className="flex items-center gap-1">
+          {notificationsHref && (
+            <Link
+              href={notificationsHref}
+              onClick={() => setOpen(false)}
+              aria-label="Notifications"
+              className={`btn-ghost px-3 py-2 text-lg ${
+                isActive(notificationsHref) ? "text-brand-600" : ""
+              }`}
+            >
+              🔔
+            </Link>
+          )}
+          <button onClick={() => setOpen(!open)} className="btn-ghost px-3 py-2" aria-label="Menu">
+            {open ? "✕" : "☰"}
+          </button>
+        </div>
       </div>
 
       {/* Menu mobile déroulant */}
