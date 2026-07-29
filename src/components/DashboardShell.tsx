@@ -122,8 +122,27 @@ export function DashboardShell({
           </div>
         </aside>
 
-        {/* Contenu */}
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* Colonne de contenu */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Barre supérieure desktop : raccourci notifications à droite */}
+          {notificationsHref && (
+            <header className="sticky top-0 z-20 hidden items-center justify-end border-b border-slate-200 bg-white px-8 py-3 lg:flex">
+              <Link
+                href={notificationsHref}
+                aria-label="Notifications"
+                className={`btn-ghost flex items-center gap-2 px-3 py-2 text-sm font-medium ${
+                  isActive(notificationsHref)
+                    ? "text-brand-600"
+                    : "text-slate-600"
+                }`}
+              >
+                <span className="text-lg">🔔</span> Notifications
+              </Link>
+            </header>
+          )}
+
+          <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        </div>
       </div>
     </div>
   );
