@@ -167,7 +167,7 @@ export function NotificationsPush() {
             .
           </li>
           <li>
-            3. Ouvrez LivraPro depuis la nouvelle icône, puis revenez ici : le
+            3. Ouvrez Coursa depuis la nouvelle icône, puis revenez ici : le
             bouton <span className="font-semibold">« Activer »</span>{" "}
             apparaîtra.
           </li>

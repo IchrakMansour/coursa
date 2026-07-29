@@ -2,13 +2,17 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LivraPro — Gérez votre activité de livraison",
+  title: "Coursa — Gérez votre activité de livraison",
   description:
     "La plateforme tout-en-un pour les livreurs indépendants : vitrine digitale, restaurants partenaires, commandes, clients et statistiques.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
-    title: "LivraPro",
+    title: "Coursa",
     statusBarStyle: "default",
   },
 };

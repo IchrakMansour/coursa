@@ -1,6 +1,6 @@
 import type { CommandeStatus } from "@/types/database";
 
-export const APP_NAME = "LivraPro";
+export const APP_NAME = "Coursa";
 
 // Ordre et libellés des statuts de commande (parcours livreur)
 export const COMMANDE_FLOW: CommandeStatus[] = [

@@ -1,6 +1,6 @@
 {
-  "name": "LivraPro",
-  "short_name": "LivraPro",
+  "name": "Coursa",
+  "short_name": "Coursa",
   "description": "Gérez votre activité de livraison : commandes, clients et notifications.",
   "start_url": "/livreur",
   "scope": "/",
