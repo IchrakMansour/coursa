@@ -74,7 +74,7 @@ export default async function ProfilPage() {
             <input
               name="horaire_ouverture"
               type="time"
-              className="input min-w-0"
+              className="input w-full min-w-0 appearance-none text-center [color-scheme:light]"
               defaultValue={livreur.horaire_ouverture ?? "12:00"}
             />
           </div>
@@ -83,7 +83,7 @@ export default async function ProfilPage() {
             <input
               name="horaire_fermeture"
               type="time"
-              className="input min-w-0"
+              className="input w-full min-w-0 appearance-none text-center [color-scheme:light]"
               defaultValue={livreur.horaire_fermeture ?? "23:00"}
             />
           </div>
