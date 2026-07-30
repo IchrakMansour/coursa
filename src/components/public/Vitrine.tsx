@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   formatPrix,
+  iconeService,
   initiales,
   normaliserTelTunisien,
   telWhatsApp,
@@ -300,7 +301,7 @@ export function Vitrine({
                     : "border-slate-200 bg-white hover:bg-slate-50"
                 }`}
               >
-                <span className="text-xl">{s.icone}</span>
+                <span className="text-xl">{iconeService(s.nom, s.icone)}</span>
                 <p className="mt-1 truncate text-sm font-semibold text-slate-900">
                   {s.nom}
                 </p>
@@ -324,7 +325,7 @@ export function Vitrine({
           <section className="mt-6">
             <div className="card p-5">
               <h2 className="font-bold text-slate-900">
-                {serviceActif.icone} {serviceActif.nom}
+                {iconeService(serviceActif.nom, serviceActif.icone)} {serviceActif.nom}
               </h2>
               <p className="mt-0.5 text-sm text-slate-500">
                 Décrivez ce dont vous avez besoin, le livreur s&apos;en occupe et
@@ -578,7 +579,7 @@ export function Vitrine({
             <div className="mb-4 rounded-xl bg-slate-50 p-3 text-sm">
               <p className="mb-1 font-semibold text-slate-800">
                 {serviceActif
-                  ? `${serviceActif.icone} ${serviceActif.nom}`
+                  ? `${iconeService(serviceActif.nom, serviceActif.icone)} ${serviceActif.nom}`
                   : `🍽️ ${restoActif?.nom ?? ""}`}
               </p>
               {items.map((it) => (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { formatPrix } from "@/lib/utils";
+import { formatPrix, iconeService } from "@/lib/utils";
 import type { Service } from "@/types/database";
 
 export function ServiceChip({
@@ -14,7 +14,7 @@ export function ServiceChip({
   const [pending, startTransition] = useTransition();
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm">
-      <span>{service.icone}</span>
+      <span>{iconeService(service.nom, service.icone)}</span>
       {service.nom}
       <span className="text-xs text-slate-400">
         {Number(service.prix) > 0 ? formatPrix(service.prix) : "à convenir"}
