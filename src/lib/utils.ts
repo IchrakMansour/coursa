@@ -6,6 +6,30 @@ export function formatPrix(montant: number): string {
   return `${s} ${DEVISE}`;
 }
 
+// Icône adaptée à un service. On respecte le choix explicite du livreur ;
+// sinon (ou si l'icône est restée sur le 📦 par défaut) on la déduit du nom :
+// pharmacie → 💊, colis → 📦, courses → 🛒, eau → 💧, etc.
+export function iconeService(
+  nom: string | null | undefined,
+  icone?: string | null
+): string {
+  const n = (nom ?? "").toLowerCase();
+  const paires: [RegExp, string][] = [
+    [/pharma|m[ée]dic|ordonnance/, "💊"],
+    [/colis|paquet/, "📦"],
+    [/course|[ée]piceri|march[ée]|supermarch|aliment/, "🛒"],
+    [/\beau\b|bonbonne/, "💧"],
+    [/pain|boulanger|p[âa]tisser/, "🥖"],
+    [/fleur/, "💐"],
+    [/document|papier|dossier|administrat/, "📄"],
+    [/cadeau/, "🎁"],
+    [/plat|repas|food|nourritur|restau/, "🍽️"],
+  ];
+  const derive = paires.find(([re]) => re.test(n))?.[1];
+  if (icone && icone !== "📦") return icone; // choix explicite conservé
+  return derive ?? icone ?? "📦";
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
     day: "2-digit",
