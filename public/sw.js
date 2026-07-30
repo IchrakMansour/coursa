@@ -15,6 +15,11 @@ self.addEventListener("push", (event) => {
     body: data.body || "Vous avez reçu une nouvelle commande.",
     tag: data.tag || "commande",
     renotify: true,
+    // Alerte maximale possible application fermée : son système + vibration,
+    // et la notification reste affichée jusqu'à ce que le livreur la touche
+    // (Android/desktop ; iOS l'ignore mais joue le son système).
+    requireInteraction: true,
+    vibrate: [300, 150, 300, 150, 300, 150, 300],
     data: { url: data.url || "/livreur/commandes" },
   };
 
