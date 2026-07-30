@@ -137,32 +137,35 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
   if (!alerte) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-brand-950 p-6 text-white">
-      {/* Détails de la commande */}
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="grid h-16 w-16 animate-bounce place-items-center rounded-full bg-gold-500 text-3xl">
-          🛎️
+    <div className="fixed inset-0 z-[70] flex items-stretch justify-center bg-brand-950 sm:items-center sm:bg-brand-950/85 sm:p-6 sm:backdrop-blur-sm">
+      {/* Plein écran sur mobile, grande carte centrée sur écran large */}
+      <div className="flex w-full flex-col overflow-y-auto p-6 text-white sm:max-h-[92vh] sm:min-h-[560px] sm:max-w-md sm:rounded-3xl sm:bg-brand-900 sm:shadow-2xl sm:ring-1 sm:ring-white/10">
+        {/* Détails de la commande */}
+        <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+          <div className="grid h-16 w-16 animate-bounce place-items-center rounded-full bg-gold-500 text-3xl sm:h-20 sm:w-20 sm:text-4xl">
+            🛎️
+          </div>
+          <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-white/60">
+            Nouvelle commande
+          </p>
+          <p className="mt-3 text-5xl font-extrabold tracking-tight text-gold-400 sm:text-6xl">
+            {formatPrix(alerte.total)}
+          </p>
+          <p className="mt-4 text-xl font-bold sm:text-2xl">{alerte.client_nom}</p>
+          <p className="text-sm text-white/70 sm:text-base">{alerte.cible}</p>
+          <p className="mt-1 text-xs text-white/40">{alerte.reference}</p>
         </div>
-        <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-white/60">
-          Nouvelle commande
-        </p>
-        <p className="mt-3 text-5xl font-extrabold tracking-tight text-gold-400">
-          {formatPrix(alerte.total)}
-        </p>
-        <p className="mt-4 text-xl font-bold">{alerte.client_nom}</p>
-        <p className="text-sm text-white/70">{alerte.cible}</p>
-        <p className="mt-1 text-xs text-white/40">{alerte.reference}</p>
-      </div>
 
-      {/* Curseur « glisser pour accepter » */}
-      <GlisserAccepter onAccept={accepter} enCours={enCours} />
-      <button
-        onClick={refuser}
-        disabled={enCours}
-        className="mt-3 py-2 text-sm font-semibold text-red-300"
-      >
-        Refuser
-      </button>
+        {/* Curseur « glisser pour accepter » */}
+        <GlisserAccepter onAccept={accepter} enCours={enCours} />
+        <button
+          onClick={refuser}
+          disabled={enCours}
+          className="mt-3 py-2 text-sm font-semibold text-red-300"
+        >
+          Refuser
+        </button>
+      </div>
     </div>
   );
 }
