@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { canalLivreur } from "@/lib/constants";
 import { formatPrix } from "@/lib/utils";
-import { changerStatut } from "@/app/livreur/(dashboard)/commandes/actions";
+import {
+  changerStatut,
+  refuserCommande,
+} from "@/app/livreur/(dashboard)/commandes/actions";
 
 interface Alerte {
   id: string;
@@ -15,67 +18,51 @@ interface Alerte {
   total: number;
 }
 
-// Alerte « nouvelle commande » façon Uber : plein écran, compte à rebours,
-// sonnerie mélodique en boucle, et curseur « glisser pour accepter ».
-// La sonnerie est générée par le navigateur (Web Audio), aucun fichier requis.
+// Alerte « nouvelle commande » façon Uber : plein écran, sonnerie en boucle
+// (fichier public/sonnerie.mp3) jusqu'à ce que le livreur accepte (glisser à
+// droite) ou refuse.
 export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
   const router = useRouter();
   const [alerte, setAlerte] = useState<Alerte | null>(null);
   const [enCours, setEnCours] = useState(false);
 
-  const ctxRef = useRef<AudioContext | null>(null);
-  const boucleRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const secuRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const vibreRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const contexte = useCallback(() => {
-    if (!ctxRef.current) {
-      const AC =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
-      if (AC) ctxRef.current = new AC();
-    }
-    return ctxRef.current;
-  }, []);
-
-  // Les navigateurs bloquent l'audio tant qu'il n'y a pas eu d'interaction :
-  // on débloque le contexte audio dès la première interaction dans l'app.
+  // Prépare la sonnerie et débloque la lecture dès la première interaction
+  // (les navigateurs interdisent l'audio automatique sans geste utilisateur).
   useEffect(() => {
-    const debloquer = () => contexte()?.resume().catch(() => {});
-    window.addEventListener("pointerdown", debloquer);
-    window.addEventListener("keydown", debloquer);
+    const audio = new Audio("/sonnerie.mp3");
+    audio.loop = true;
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    const debloquer = () => {
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("pointerdown", debloquer, { once: true });
+    window.addEventListener("keydown", debloquer, { once: true });
     return () => {
       window.removeEventListener("pointerdown", debloquer);
       window.removeEventListener("keydown", debloquer);
+      audio.pause();
     };
-  }, [contexte]);
-
-  // Une note « marimba » : attaque brève, extinction rapide + harmonique.
-  const note = (ctx: AudioContext, freq: number, debut: number) => {
-    const dur = 0.5;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, debut);
-    gain.gain.exponentialRampToValueAtTime(0.55, debut + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, debut + dur);
-    gain.connect(ctx.destination);
-    [1, 2].forEach((mult, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = freq * mult;
-      const g = ctx.createGain();
-      g.gain.value = i === 0 ? 1 : 0.28;
-      osc.connect(g);
-      g.connect(gain);
-      osc.start(debut);
-      osc.stop(debut + dur);
-    });
-  };
+  }, []);
 
   const arreter = useCallback(() => {
-    if (boucleRef.current) clearInterval(boucleRef.current);
-    if (secuRef.current) clearTimeout(secuRef.current);
-    boucleRef.current = null;
-    secuRef.current = null;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    if (vibreRef.current) clearInterval(vibreRef.current);
+    vibreRef.current = null;
     try {
       navigator.vibrate?.(0);
     } catch {
@@ -84,29 +71,24 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
   }, []);
 
   const sonner = useCallback(() => {
-    const ctx = contexte();
-    if (!ctx) return;
-    ctx.resume().catch(() => {});
-
-    // Petit motif ascendant (do–mi–sol–do), esprit « alerte de course ».
-    const motif = () => {
-      const t = ctx.currentTime;
-      const notes = [523.25, 659.25, 783.99, 1046.5];
-      notes.forEach((f, i) => note(ctx, f, t + i * 0.16));
+    const audio = audioRef.current;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.loop = true;
+      audio.play().catch(() => {});
+    }
+    // Vibration répétée en parallèle (Android).
+    if (vibreRef.current) clearInterval(vibreRef.current);
+    const vibrer = () => {
       try {
-        navigator.vibrate?.([200, 120, 200]);
+        navigator.vibrate?.([300, 150, 300]);
       } catch {
         /* ignore */
       }
     };
-
-    motif();
-    if (boucleRef.current) clearInterval(boucleRef.current);
-    boucleRef.current = setInterval(motif, 1600);
-    // Sécurité : la sonnerie s'arrête seule au bout de 30 s.
-    if (secuRef.current) clearTimeout(secuRef.current);
-    secuRef.current = setTimeout(arreter, 30000);
-  }, [contexte, arreter]);
+    vibrer();
+    vibreRef.current = setInterval(vibrer, 1500);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -123,11 +105,6 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
     };
   }, [livreurId, sonner, arreter]);
 
-  const ignorer = () => {
-    arreter();
-    setAlerte(null);
-  };
-
   const accepter = async () => {
     if (!alerte || enCours) return;
     arreter();
@@ -135,7 +112,7 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
     try {
       await changerStatut(alerte.id, "acceptee");
     } catch {
-      /* on ferme quand même : le livreur verra la commande dans la liste */
+      /* on ferme quand même : la commande reste dans la liste */
     }
     setEnCours(false);
     setAlerte(null);
@@ -143,15 +120,24 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
     router.refresh();
   };
 
+  const refuser = async () => {
+    if (!alerte || enCours) return;
+    arreter();
+    setEnCours(true);
+    try {
+      await refuserCommande(alerte.id);
+    } catch {
+      /* ignore */
+    }
+    setEnCours(false);
+    setAlerte(null);
+    router.refresh();
+  };
+
   if (!alerte) return null;
 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-brand-950 p-6 text-white">
-      {/* Compte à rebours */}
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-        <div key={alerte.id} className="animate-retrecir h-full bg-gold-500" />
-      </div>
-
       {/* Détails de la commande */}
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <div className="grid h-16 w-16 animate-bounce place-items-center rounded-full bg-gold-500 text-3xl">
@@ -171,11 +157,11 @@ export function AlerteNouvelleCommande({ livreurId }: { livreurId: string }) {
       {/* Curseur « glisser pour accepter » */}
       <GlisserAccepter onAccept={accepter} enCours={enCours} />
       <button
-        onClick={ignorer}
+        onClick={refuser}
         disabled={enCours}
-        className="mt-3 py-2 text-sm font-medium text-white/60"
+        className="mt-3 py-2 text-sm font-semibold text-red-300"
       >
-        Ignorer
+        Refuser
       </button>
     </div>
   );
@@ -229,7 +215,6 @@ function GlisserAccepter({
       ref={pisteRef}
       className="relative h-16 w-full select-none overflow-hidden rounded-full bg-white/10"
     >
-      {/* Remplissage doré selon la progression */}
       <div
         className="absolute inset-y-0 left-0 rounded-full bg-gold-500/30"
         style={{ width: x + KNOB + PAD * 2 }}
