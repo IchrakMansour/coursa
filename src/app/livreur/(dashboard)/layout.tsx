@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell, type NavItem } from "@/components/DashboardShell";
+import { AlerteNouvelleCommande } from "@/components/livreur/AlerteNouvelleCommande";
 
 const NAV: NavItem[] = [
   { href: "/livreur", label: "Tableau de bord", icon: "home", short: "Accueil" },
@@ -36,6 +37,7 @@ export default async function LivreurLayout({
       userName={profile.full_name ?? "Livreur"}
       notificationsHref="/livreur/notifications"
     >
+      <AlerteNouvelleCommande livreurId={profile.id} />
       {children}
     </DashboardShell>
   );

@@ -62,6 +62,12 @@ export function canalSuivi(commandeId: string) {
   return `suivi-${commandeId}`;
 }
 
+// Canal Realtime privé du livreur : reçoit une alerte à chaque nouvelle
+// commande (sonnerie + fenêtre) tant que l'application est ouverte.
+export function canalLivreur(livreurId: string) {
+  return `livreur-${livreurId}`;
+}
+
 // Cadence d'émission de la position
 export const POSITION_INTERVALLE_MS = 10_000; // 1 point toutes les 10 s max
 export const POSITION_DISTANCE_M = 25; // ou dès 25 m parcourus

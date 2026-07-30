@@ -7,6 +7,8 @@ import {
   msgConfirmationClient,
 } from "@/lib/whatsapp";
 import { envoyerPushLivreur } from "@/lib/push";
+import { diffuser } from "@/lib/realtime";
+import { canalLivreur } from "@/lib/constants";
 
 interface ItemInput {
   produit_id: string;
@@ -212,6 +214,15 @@ export async function POST(request: Request) {
 
     const numLivreur = livreurProfile?.whatsapp || livreurProfile?.phone;
     const cibleNom = resto?.nom ?? serviceNom ?? "Course";
+
+    // Alerte temps réel au livreur (sonnerie + fenêtre) s'il a l'app ouverte.
+    await diffuser(canalLivreur(livreur.id), "nouvelle_commande", {
+      id: commande.id,
+      reference: commande.reference,
+      client_nom,
+      cible: cibleNom,
+      total,
+    });
     await Promise.allSettled([
       numLivreur
         ? sendWhatsApp(
