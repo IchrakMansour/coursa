@@ -68,22 +68,22 @@ export default async function ProfilPage() {
             placeholder="Sousse centre, Khezama, Sahloul"
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="min-w-0">
             <label className="label">Ouverture</label>
             <input
               name="horaire_ouverture"
               type="time"
-              className="input"
+              className="input min-w-0"
               defaultValue={livreur.horaire_ouverture ?? "12:00"}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="label">Fermeture</label>
             <input
               name="horaire_fermeture"
               type="time"
-              className="input"
+              className="input min-w-0"
               defaultValue={livreur.horaire_fermeture ?? "23:00"}
             />
           </div>
@@ -126,10 +126,26 @@ export default async function ProfilPage() {
           )}
         </div>
         <form action={ajouterService} className="mt-4 flex flex-wrap gap-2">
-          <input name="icone" className="input w-16 text-center" defaultValue="📦" maxLength={2} />
+          <select
+            name="icone"
+            className="input w-full text-base sm:w-40"
+            defaultValue="🛒"
+            aria-label="Icône du service"
+          >
+            <option value="🛒">🛒 Courses</option>
+            <option value="💊">💊 Pharmacie</option>
+            <option value="📦">📦 Colis</option>
+            <option value="🥖">🥖 Boulangerie</option>
+            <option value="🍽️">🍽️ Plats</option>
+            <option value="💧">💧 Eau</option>
+            <option value="💐">💐 Fleurs</option>
+            <option value="📄">📄 Documents</option>
+            <option value="🎁">🎁 Cadeau</option>
+            <option value="🧺">🧺 Autre</option>
+          </select>
           <input
             name="nom"
-            className="input min-w-[140px] flex-1"
+            className="input min-w-0 flex-1 basis-40"
             placeholder="Nom du service"
             required
           />
@@ -139,11 +155,11 @@ export default async function ProfilPage() {
             step="0.5"
             min="0"
             inputMode="decimal"
-            className="input w-28"
+            className="input w-full sm:w-28"
             placeholder="Prix DT"
             title="Frais de livraison — laissez vide pour « à convenir »"
           />
-          <button className="btn-secondary">Ajouter</button>
+          <button className="btn-secondary w-full sm:w-auto">Ajouter</button>
         </form>
         <p className="mt-2 text-xs text-slate-400">
           Prix vide ou 0 : le tarif sera annoncé comme « à convenir ».
