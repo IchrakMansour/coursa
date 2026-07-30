@@ -27,6 +27,19 @@ body {
   }
 }
 
+/* Barre de compte à rebours de l'alerte « nouvelle commande » */
+@keyframes retrecir {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+.animate-retrecir {
+  animation: retrecir 30s linear forwards;
+}
+
 /* Masquer la scrollbar horizontale des rangées scrollables */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
